@@ -1,0 +1,6 @@
+{
+  "name": "Rapid Video Downloader",
+  "description": "Cyberpunk terminal style multi-platform video downloader for TikTok, Facebook, Instagram, Twitter/X and more without watermarks.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
