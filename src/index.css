@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --cyber-cyan: #00ffd5;
+    --cyber-green: #0df7cb;
+    --cyber-emerald: #00e599;
+    --cyber-bg: #030d12;
+    --cyber-surface: #071a21;
+    --cyber-border: rgba(0, 255, 213, 0.2);
+  }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background-color: #030d12;
+    color: #e0f7f6;
+    overflow-x: hidden;
+  }
+
+  .font-mono-cyber {
+    font-family: 'Fira Code', monospace;
+  }
+
+  .font-display {
+    font-family: 'Rajdhani', sans-serif;
+  }
+}
+
+/* Cyberpunk glowing utilities */
+.glow-cyan {
+  box-shadow: 0 0 15px rgba(0, 255, 213, 0.3), inset 0 0 15px rgba(0, 255, 213, 0.05);
+}
+
+.glow-cyan-lg {
+  box-shadow: 0 0 25px rgba(0, 255, 213, 0.45), inset 0 0 10px rgba(0, 255, 213, 0.1);
+}
+
+.glow-text-cyan {
+  text-shadow: 0 0 10px rgba(0, 255, 213, 0.5);
+}
+
+.glow-border {
+  border-color: rgba(0, 255, 213, 0.4);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #040e13;
+}
+::-webkit-scrollbar-thumb {
+  background: #0a313b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00ffd5;
+}
+
+/* Scanline effect */
+.scanlines {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.01),
+    rgba(0, 255, 0, 0.005),
+    rgba(0, 0, 255, 0.01)
+  );
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+}
+
+/* Cyber grid pattern */
+.cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 255, 213, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 255, 213, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
