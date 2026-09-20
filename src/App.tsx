@@ -22,8 +22,6 @@ import { CyberBackground } from './components/CyberBackground';
 import { AdminScreen } from './components/AdminScreen';
 import { initAnalytics, trackEvent } from './utils/analytics';
 import { Smartphone, Monitor } from 'lucide-react';
-import { AdminScreen } from './components/adminscreen';
-import { initAnalytics, trackEvent } from './utils/analytics';
 
 const INITIAL_HISTORY: DownloadHistoryItem[] = [];
 
