@@ -83,7 +83,7 @@ export default function App() {
       description: 'Fetching metadata from the public source.',
       tags: [detected.name.toLowerCase(), 'resolving'],
       downloadSupported: false,
-      downloadMessage: 'Resolving the public download stream...',
+       downloadMessage: 'Resolving the download stream...',
       options: [],
     };
     setMetadata(pendingMeta);
