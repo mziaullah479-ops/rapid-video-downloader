@@ -1,7 +1,9 @@
 import { VideoMetadata, PlatformId, DownloadOption } from '../types';
 import { SAMPLE_VIDEOS } from '../data/mockVideos';
 
-const WORKING_SAMPLE_STREAM = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+const DEFAULT_AVATAR = '/favicon.svg';
+const DEFAULT_THUMBNAIL = '/og-image.svg';
+const PUBLIC_DATA_UNAVAILABLE = 'Public data unavailable';
 
 // Helper to extract YouTube Video ID from any format (standard, short URL, shorts, mobile, embed)
 export function extractYouTubeId(url: string): string | null {
@@ -71,16 +73,20 @@ function formatDuration(seconds: number): string {
 }
 
 function metadataDetails(serverData: any, fallback: VideoMetadata) {
-  const duration = Number(serverData?.duration || fallback.duration || 0);
+  const duration = Number(serverData?.duration || 0);
   return {
-    subscribersOrFollowers: serverData?.subscribersOrFollowers || fallback.subscribersOrFollowers,
-    views: serverData?.views || fallback.views,
-    likes: serverData?.likes || fallback.likes,
-    uploadedDate: serverData?.uploadedDate || fallback.uploadedDate,
+    authorAvatar: serverData?.authorAvatar || DEFAULT_AVATAR,
+    authorVerified: serverData?.authorVerified === true,
+    subscribersOrFollowers: serverData?.subscribersOrFollowers || PUBLIC_DATA_UNAVAILABLE,
+    views: serverData?.views || PUBLIC_DATA_UNAVAILABLE,
+    likes: serverData?.likes || PUBLIC_DATA_UNAVAILABLE,
+    uploadedDate: serverData?.uploadedDate || 'Public date unavailable',
     duration,
     durationFormatted: formatDuration(duration),
-    description: serverData?.description || fallback.description,
-    tags: Array.isArray(serverData?.tags) && serverData.tags.length > 0 ? serverData.tags : fallback.tags,
+    description: serverData?.description || 'Public description unavailable.',
+    tags: Array.isArray(serverData?.tags) && serverData.tags.length > 0 ? serverData.tags : [fallback.platform, 'public media'],
+    thumbnail: serverData?.thumbnail || DEFAULT_THUMBNAIL,
+    previewVideoUrl: serverData?.previewVideoUrl || '',
   };
 }
 
@@ -170,12 +176,6 @@ export function generateDownloadOptions(
  */
 export async function resolveVideoMetadataAsync(inputUrl: string): Promise<VideoMetadata> {
   const cleanUrl = inputUrl.trim();
-  const lower = cleanUrl.toLowerCase();
-
-  // If user explicitly asks for the screenshot preset sample
-  if (lower.includes('dqw4w9wgxcq') && !cleanUrl.includes('watch?v=')) {
-    return { ...SAMPLE_VIDEOS.mrbeast, url: cleanUrl };
-  }
 
   const { id: platformId, name: platformName } = detectPlatform(cleanUrl);
 
@@ -200,7 +200,7 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
 
       let title = serverData?.title || `YouTube Video (${videoId})`;
       let author = serverData?.author || 'YouTube Creator';
-      let authorAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80';
+      let authorAvatar = serverData?.authorAvatar || DEFAULT_AVATAR;
       let thumbnail = serverData?.thumbnail || highResThumb;
 
       // Public YouTube oEmbed API fallback
@@ -233,7 +233,7 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
         author = 'Rick Astley';
       }
 
-      const duration = Number(serverData?.duration || 240);
+       const duration = Number(serverData?.duration || 0);
       return {
         id: `yt-${videoId}`,
         url: cleanUrl,
@@ -242,21 +242,21 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
         title: title,
         author: author,
         authorAvatar: authorAvatar,
-        authorVerified: true,
-         subscribersOrFollowers: serverData?.subscribersOrFollowers || 'Public channel',
-         views: serverData?.views || 'Public views unavailable',
-         likes: serverData?.likes || 'Public likes unavailable',
+         authorVerified: serverData?.authorVerified === true,
+          subscribersOrFollowers: serverData?.subscribersOrFollowers || PUBLIC_DATA_UNAVAILABLE,
+          views: serverData?.views || PUBLIC_DATA_UNAVAILABLE,
+          likes: serverData?.likes || PUBLIC_DATA_UNAVAILABLE,
          uploadedDate: serverData?.uploadedDate || 'Public date unavailable',
          duration,
          durationFormatted: formatDuration(duration),
-        description: serverData?.description || `Public YouTube media stream: "${title}" by ${author}. Download availability depends on the source and platform permissions.`,
+         description: serverData?.description || 'Public description unavailable.',
         tags: Array.isArray(serverData?.tags) && serverData.tags.length > 0 ? serverData.tags : ['youtube', 'public media', videoId],
-        thumbnail: thumbnail || fallbackThumb,
+         thumbnail: thumbnail || fallbackThumb || DEFAULT_THUMBNAIL,
         previewVideoUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1`,
         youtubeVideoId: videoId,
          downloadSupported: serverData?.downloadSupported === true,
          downloadMessage: serverData?.downloadMessage,
-         options: generateDownloadOptions(videoId, Number(serverData?.duration || 240), cleanUrl)
+         options: generateDownloadOptions(videoId, Number(serverData?.duration || 0), cleanUrl)
       };
     }
   }
@@ -266,7 +266,7 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
     const info = extractTikTokInfo(cleanUrl);
     const authorName = serverData?.author || (info?.author ? `@${info.author}` : '@tiktok.creator');
     const title = serverData?.title || `TikTok Video (${authorName})`;
-    const thumb = serverData?.thumbnail || SAMPLE_VIDEOS.tiktok_viral.thumbnail;
+    const thumb = serverData?.thumbnail || DEFAULT_THUMBNAIL;
 
     return {
       ...SAMPLE_VIDEOS.tiktok_viral,
@@ -278,7 +278,7 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
        ...metadataDetails(serverData, SAMPLE_VIDEOS.tiktok_viral),
        downloadSupported: serverData?.downloadSupported === true,
        downloadMessage: serverData?.downloadMessage,
-       options: generateDownloadOptions('tt-' + Date.now(), Number(serverData?.duration || 45), cleanUrl)
+        options: generateDownloadOptions('tt-' + Date.now(), Number(serverData?.duration || 0), cleanUrl)
     };
   }
 
@@ -287,7 +287,7 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
     const code = extractInstagramCode(cleanUrl);
     const title = serverData?.title || `Instagram Reel [${code || 'Stream'}]`;
     const author = serverData?.author || 'Instagram Creator';
-    const thumb = serverData?.thumbnail || SAMPLE_VIDEOS.instagram_reel.thumbnail;
+    const thumb = serverData?.thumbnail || DEFAULT_THUMBNAIL;
 
     return {
       ...SAMPLE_VIDEOS.instagram_reel,
@@ -299,15 +299,15 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
        ...metadataDetails(serverData, SAMPLE_VIDEOS.instagram_reel),
        downloadSupported: serverData?.downloadSupported === true,
        downloadMessage: serverData?.downloadMessage,
-       options: generateDownloadOptions('ig-' + (code || Date.now()), Number(serverData?.duration || 60), cleanUrl)
+        options: generateDownloadOptions('ig-' + (code || Date.now()), Number(serverData?.duration || 0), cleanUrl)
     };
   }
 
   // 4. FACEBOOK RESOLUTION
   if (platformId === 'facebook') {
-    const title = serverData?.title || 'Facebook Watch HD Video Stream';
+    const title = serverData?.title || 'Facebook public media';
     const author = serverData?.author || 'Facebook Creator';
-    const thumb = serverData?.thumbnail || SAMPLE_VIDEOS.facebook_clip.thumbnail;
+    const thumb = serverData?.thumbnail || DEFAULT_THUMBNAIL;
 
     return {
       ...SAMPLE_VIDEOS.facebook_clip,
@@ -319,15 +319,15 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
        ...metadataDetails(serverData, SAMPLE_VIDEOS.facebook_clip),
        downloadSupported: serverData?.downloadSupported === true,
        downloadMessage: serverData?.downloadMessage,
-       options: generateDownloadOptions('fb-' + Date.now(), Number(serverData?.duration || 180), cleanUrl)
+        options: generateDownloadOptions('fb-' + Date.now(), Number(serverData?.duration || 0), cleanUrl)
     };
   }
 
   // 5. TWITTER / X RESOLUTION
   if (platformId === 'twitter') {
-    const title = serverData?.title || 'X (Twitter) HD Media Video';
+    const title = serverData?.title || 'X public media';
     const author = serverData?.author || '@x_user';
-    const thumb = serverData?.thumbnail || SAMPLE_VIDEOS.twitter_clip.thumbnail;
+    const thumb = serverData?.thumbnail || DEFAULT_THUMBNAIL;
 
     return {
       ...SAMPLE_VIDEOS.twitter_clip,
@@ -339,15 +339,15 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
        ...metadataDetails(serverData, SAMPLE_VIDEOS.twitter_clip),
        downloadSupported: serverData?.downloadSupported === true,
        downloadMessage: serverData?.downloadMessage,
-       options: generateDownloadOptions('x-' + Date.now(), Number(serverData?.duration || 50), cleanUrl)
+        options: generateDownloadOptions('x-' + Date.now(), Number(serverData?.duration || 0), cleanUrl)
     };
   }
 
   // 6. REDDIT RESOLUTION
   if (platformId === 'reddit') {
-    const title = serverData?.title || 'Reddit Viral Video Post (Clean Audio/Video)';
+    const title = serverData?.title || 'Reddit public media';
     const author = serverData?.author || 'r/videos';
-    const thumb = serverData?.thumbnail || 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&auto=format&fit=crop&q=80';
+    const thumb = serverData?.thumbnail || DEFAULT_THUMBNAIL;
 
     return {
       id: `rd-${Date.now()}`,
@@ -356,31 +356,31 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
       platformName: 'Reddit',
       title: title,
       author: author,
-      authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
-      authorVerified: true,
+      authorAvatar: serverData?.authorAvatar || DEFAULT_AVATAR,
+      authorVerified: serverData?.authorVerified === true,
       ...metadataDetails(serverData, {
         ...SAMPLE_VIDEOS.mrbeast,
         platform: 'reddit',
         platformName: 'Reddit',
         title: 'Reddit public media',
         author: 'Public Reddit creator',
-        duration: 75,
-        description: 'Public Reddit post media. Download availability depends on the post and platform permissions.',
-        tags: ['reddit', 'video', 'public'],
+        duration: 0,
+        description: 'Public description unavailable.',
+        tags: ['reddit', 'public media'],
       }),
       thumbnail: thumb,
-      previewVideoUrl: WORKING_SAMPLE_STREAM,
+      previewVideoUrl: serverData?.previewVideoUrl || '',
       downloadSupported: serverData?.downloadSupported === true,
       downloadMessage: serverData?.downloadMessage,
-      options: generateDownloadOptions('rd-' + Date.now(), Number(serverData?.duration || 75), cleanUrl)
+      options: generateDownloadOptions('rd-' + Date.now(), Number(serverData?.duration || 0), cleanUrl)
     };
   }
 
   // 7. PINTEREST RESOLUTION
   if (platformId === 'pinterest') {
-    const title = serverData?.title || 'Pinterest Aesthetic Video Pin (1080p HD)';
+    const title = serverData?.title || 'Pinterest public media';
     const author = serverData?.author || 'Pinterest Creator';
-    const thumb = serverData?.thumbnail || 'https://images.unsplash.com/photo-1516251193007-45ef944ab0c6?w=800&auto=format&fit=crop&q=80';
+    const thumb = serverData?.thumbnail || DEFAULT_THUMBNAIL;
 
     return {
       id: `pin-${Date.now()}`,
@@ -389,35 +389,29 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
       platformName: 'Pinterest',
       title: title,
       author: author,
-      authorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80',
-      authorVerified: true,
-      subscribersOrFollowers: 'Original Pin',
-      views: 'High Definition',
-      likes: '9.2K repins',
-      uploadedDate: 'Recent',
-      duration: 35,
-      durationFormatted: '00:35',
-      description: `Original Pinterest video pin extracted in full resolution without compression. Ready for instant device save.`,
-      tags: ['pinterest', 'video', 'pin', 'hd'],
+      authorAvatar: serverData?.authorAvatar || DEFAULT_AVATAR,
+      authorVerified: serverData?.authorVerified === true,
+      subscribersOrFollowers: PUBLIC_DATA_UNAVAILABLE,
+      views: PUBLIC_DATA_UNAVAILABLE,
+      likes: PUBLIC_DATA_UNAVAILABLE,
+      uploadedDate: 'Public date unavailable',
+      duration: Number(serverData?.duration || 0),
+      durationFormatted: formatDuration(Number(serverData?.duration || 0)),
+      description: serverData?.description || 'Public description unavailable.',
+      tags: Array.isArray(serverData?.tags) && serverData.tags.length > 0 ? serverData.tags : ['pinterest', 'public media'],
       thumbnail: thumb,
-      previewVideoUrl: WORKING_SAMPLE_STREAM,
-      ...metadataDetails(serverData, {
-        ...SAMPLE_VIDEOS.mrbeast,
-        duration: 35,
-        description: 'Public Pinterest media pin.',
-        tags: ['pinterest', 'video', 'public'],
-      }),
+      previewVideoUrl: serverData?.previewVideoUrl || '',
       downloadSupported: serverData?.downloadSupported === true,
       downloadMessage: serverData?.downloadMessage,
-      options: generateDownloadOptions('pin-' + Date.now(), Number(serverData?.duration || 35), cleanUrl)
+      options: generateDownloadOptions('pin-' + Date.now(), Number(serverData?.duration || 0), cleanUrl)
     };
   }
 
   // 8. VIMEO RESOLUTION
   if (platformId === 'vimeo') {
-    const title = serverData?.title || 'Vimeo Cinema Master Video';
+    const title = serverData?.title || 'Vimeo public media';
     const author = serverData?.author || 'Vimeo Creator';
-    const thumb = serverData?.thumbnail || 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&auto=format&fit=crop&q=80';
+    const thumb = serverData?.thumbnail || DEFAULT_THUMBNAIL;
 
     return {
       id: `vm-${Date.now()}`,
@@ -426,27 +420,21 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
       platformName: 'Vimeo',
       title: title,
       author: author,
-      authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
-      authorVerified: true,
-      subscribersOrFollowers: 'Vimeo Pro',
-      views: 'Studio Master Quality',
-      likes: 'Staff Pick',
-      uploadedDate: 'Recent',
-      duration: 180,
-      durationFormatted: '03:00',
-      description: `High-bitrate progressive scan Vimeo stream. Preserved original frame rate and master audio clarity.`,
-      tags: ['vimeo', 'cinema', 'master', 'high-bitrate'],
+      authorAvatar: serverData?.authorAvatar || DEFAULT_AVATAR,
+      authorVerified: serverData?.authorVerified === true,
+      subscribersOrFollowers: serverData?.subscribersOrFollowers || PUBLIC_DATA_UNAVAILABLE,
+      views: serverData?.views || PUBLIC_DATA_UNAVAILABLE,
+      likes: serverData?.likes || PUBLIC_DATA_UNAVAILABLE,
+      uploadedDate: serverData?.uploadedDate || 'Public date unavailable',
+      duration: Number(serverData?.duration || 0),
+      durationFormatted: formatDuration(Number(serverData?.duration || 0)),
+      description: serverData?.description || 'Public description unavailable.',
+      tags: Array.isArray(serverData?.tags) && serverData.tags.length > 0 ? serverData.tags : ['vimeo', 'public media'],
       thumbnail: thumb,
-      previewVideoUrl: WORKING_SAMPLE_STREAM,
-      ...metadataDetails(serverData, {
-        ...SAMPLE_VIDEOS.mrbeast,
-        duration: 180,
-        description: 'Public Vimeo media.',
-        tags: ['vimeo', 'public media'],
-      }),
+      previewVideoUrl: serverData?.previewVideoUrl || '',
       downloadSupported: serverData?.downloadSupported === true,
       downloadMessage: serverData?.downloadMessage,
-      options: generateDownloadOptions('vm-' + Date.now(), Number(serverData?.duration || 180), cleanUrl)
+      options: generateDownloadOptions('vm-' + Date.now(), Number(serverData?.duration || 0), cleanUrl)
     };
   }
 
@@ -465,20 +453,20 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
     platformName: platformName,
     title: cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1),
     author: serverData?.author || `${platformName} Creator`,
-    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
-    authorVerified: true,
-    subscribersOrFollowers: serverData?.subscribersOrFollowers || 'Public source',
-    views: serverData?.views || 'Public views unavailable',
-    likes: serverData?.likes || 'Public likes unavailable',
+    authorAvatar: serverData?.authorAvatar || DEFAULT_AVATAR,
+    authorVerified: serverData?.authorVerified === true,
+    subscribersOrFollowers: serverData?.subscribersOrFollowers || PUBLIC_DATA_UNAVAILABLE,
+    views: serverData?.views || PUBLIC_DATA_UNAVAILABLE,
+    likes: serverData?.likes || PUBLIC_DATA_UNAVAILABLE,
     uploadedDate: serverData?.uploadedDate || 'Public date unavailable',
-    duration: Number(serverData?.duration || 180),
-    durationFormatted: formatDuration(Number(serverData?.duration || 180)),
-    description: serverData?.description || `Public media content from ${cleanUrl}. Download is available only when the source exposes a direct public stream.`,
-    tags: Array.isArray(serverData?.tags) && serverData.tags.length > 0 ? serverData.tags : [platformId, 'download', 'media', 'public'],
-    thumbnail: serverData?.thumbnail || 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
-    previewVideoUrl: WORKING_SAMPLE_STREAM,
+    duration: Number(serverData?.duration || 0),
+    durationFormatted: formatDuration(Number(serverData?.duration || 0)),
+    description: serverData?.description || 'Public description unavailable.',
+    tags: Array.isArray(serverData?.tags) && serverData.tags.length > 0 ? serverData.tags : [platformId, 'public media'],
+    thumbnail: serverData?.thumbnail || DEFAULT_THUMBNAIL,
+    previewVideoUrl: serverData?.previewVideoUrl || '',
     downloadSupported: serverData?.downloadSupported === true,
     downloadMessage: serverData?.downloadMessage,
-    options: generateDownloadOptions('univ-' + Date.now(), Number(serverData?.duration || 180), cleanUrl)
+    options: generateDownloadOptions('univ-' + Date.now(), Number(serverData?.duration || 0), cleanUrl)
   };
 }
