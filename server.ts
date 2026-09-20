@@ -509,10 +509,8 @@ function startTikTokAudioJob(target: URL, fileName: string) {
     "-y",
     "-loglevel",
     "error",
-    "-headers",
-    "Referer: https://www.tiktok.com/\r\nUser-Agent: Mozilla/5.0\r\n",
     "-i",
-    target.toString(),
+    "pipe:0",
     "-vn",
     "-codec:a",
     "libmp3lame",
@@ -529,6 +527,7 @@ function startTikTokAudioJob(target: URL, fileName: string) {
     job.error = error.message;
   });
   child.once("close", async (code) => {
+    if (job.status === "error") return;
     if (code === 0) {
       job.status = "ready";
       job.progress = 100;
@@ -538,6 +537,18 @@ function startTikTokAudioJob(target: URL, fileName: string) {
       await fsPromises.unlink(filePath).catch(() => undefined);
     }
   });
+
+  try {
+    const upstream = await fetch(target, { headers: mediaHeaders(target) });
+    if (!upstream.ok || !upstream.body) {
+      throw new Error(`TikTok media server returned HTTP ${upstream.status}.`);
+    }
+    Readable.fromWeb(upstream.body as import("node:stream/web").ReadableStream).pipe(child.stdin);
+  } catch (error) {
+    child.kill("SIGTERM");
+    job.status = "error";
+    job.error = error instanceof Error ? error.message : "TikTok media could not be read.";
+  }
 
   setTimeout(async () => {
     await fsPromises.unlink(filePath).catch(() => undefined);
