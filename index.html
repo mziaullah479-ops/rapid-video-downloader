@@ -11,7 +11,12 @@
     <meta name="author" content="Rapid Video Downloader" />
     <meta name="google-site-verification" content="Z_5rAuUWeVuRnNUly8-zpr5bwrFICfO-KXwHLkEYDPg" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="canonical" href="https://www.rapid-video-downloader.online/" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icon-512.png" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta property="og:title" content="Rapid Video Downloader | Free MP4 &amp; MP3 Downloader" />
     <meta property="og:description" content="Download public or authorized videos as MP4 or MP3 when the source exposes a downloadable stream." />
@@ -64,6 +69,19 @@
               "Browser-based file saving",
               "TikTok, YouTube, Instagram, Facebook and other public platforms"
             ],
+            "publisher": { "@id": "https://www.rapid-video-downloader.online/#organization" }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://www.rapid-video-downloader.online/#software",
+            "name": "Rapid Video Downloader",
+            "url": "https://www.rapid-video-downloader.online/",
+            "applicationCategory": "UtilitiesApplication",
+            "operatingSystem": "Android, iOS, Windows, macOS, Linux, ChromeOS",
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "description": "An installable browser app for inspecting public or authorized media links and saving source-provided formats.",
+            "softwareHelp": { "@type": "CreativeWork", "url": "https://www.rapid-video-downloader.online/faq/" },
             "publisher": { "@id": "https://www.rapid-video-downloader.online/#organization" }
           },
           {
@@ -142,5 +160,10 @@
       </main>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {}));
+      }
+    </script>
   </body>
 </html>
