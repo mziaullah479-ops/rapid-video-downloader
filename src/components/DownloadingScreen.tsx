@@ -115,7 +115,7 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
           quality: option.resolution,
           format: option.format,
           estimatedSizeMB: option.sizeMB,
-          backgroundJob: metadata.platform !== 'other',
+          backgroundJob: metadata.platform !== 'other' && metadata.platform !== 'tiktok',
         }
       );
 
