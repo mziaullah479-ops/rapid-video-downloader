@@ -70,7 +70,7 @@ export const DownloadOptionsScreen: React.FC<DownloadOptionsScreenProps> = ({
             <span>⏱ {metadata.durationFormatted}</span>
             <span>•</span>
             <span className="text-[#00e599] flex items-center gap-0.5">
-              <ShieldCheck size={10} /> No Watermark
+              <ShieldCheck size={10} /> Public source
             </span>
           </p>
         </div>
