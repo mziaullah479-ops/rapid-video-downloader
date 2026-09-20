@@ -80,7 +80,7 @@ export default function App() {
       views: 'Checking public metadata',
       likes: 'Checking public metadata',
       uploadedDate: 'Checking public metadata',
-      description: 'Fetching metadata from the public source.',
+       description: 'Fetching metadata from the source.',
       tags: [detected.name.toLowerCase(), 'resolving'],
       downloadSupported: false,
        downloadMessage: 'Resolving the download stream...',
@@ -156,7 +156,7 @@ export default function App() {
       <aside aria-label="Cyber Console Tools" className="hidden lg:flex items-center justify-between w-full max-w-5xl px-4 py-2 text-xs font-mono-cyber text-[#00ffd5]/70 border-b border-[#00ffd5]/10 bg-[#020b0e]/70 backdrop-blur-sm z-30">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#00ffd5] animate-ping" />
-           <span>PUBLIC MEDIA RESOLVER v4.8 // DRM BYPASS DISABLED</span>
+            <span>MEDIA RESOLVER v4.8 // DRM BYPASS DISABLED</span>
         </div>
         <div className="flex items-center gap-3">
           <button
