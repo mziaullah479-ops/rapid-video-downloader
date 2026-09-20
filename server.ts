@@ -268,11 +268,12 @@ type PublicMediaFallback = {
 };
 
 async function resolveTikTokPublicMedia(target: URL): Promise<PublicMediaFallback | null> {
-  const videoId = target.pathname.match(/\/video\/(\d+)/i)?.[1];
-  if (!videoId) return null;
-
   const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(target.toString())}`;
   const oembed = JSON.parse(await fetchPageText(oembedUrl, { Accept: "application/json,text/plain,*/*" })) as Record<string, unknown>;
+  const videoId = target.pathname.match(/\/video\/(\d+)/i)?.[1]
+    || (typeof oembed.embed_product_id === "string" ? oembed.embed_product_id : undefined);
+  if (!videoId) return null;
+
   const embedHtml = await fetchPageText(`https://www.tiktok.com/embed/v2/${videoId}`, { Referer: target.toString() });
   const videoUrl = embedHtml.match(/https?:\/\/[^"'<> ]+mime_type=video_mp4[^"'<> ]*/i)?.[0];
   if (!videoUrl) return null;
