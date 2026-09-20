@@ -32,6 +32,11 @@ const EXTRACTOR_HOSTS = [
 ];
 
 const MEDIA_EXTENSIONS = /\.(?:mp4|webm|mov|m4v|mkv|avi|mp3|m4a|wav|ogg|flac)(?:$|[?#])/i;
+const MEDIA_CONTENT_TYPES = /^(?:video|audio)\//i;
+const REQUEST_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (compatible; RapidVideoDownloader/1.0)",
+  Accept: "video/*,audio/*,application/octet-stream;q=0.9,*/*;q=0.5",
+};
 const downloadJobs = new Map<string, {
   id: string;
   filePath: string;
@@ -216,7 +221,66 @@ function contentDisposition(fileName: string): string {
 function extractorFormat(quality: string, format: string): string {
   if (format === "mp3") return "bestaudio/best";
   const height = { "1080p": 1080, "720p": 720, "480p": 480, "360p": 360 }[quality as "1080p" | "720p" | "480p" | "360p"] || 1080;
-  return `bestvideo[height<=${height}]+bestaudio/best[height<=${height}]/best`;
+  // Prefer a ready-to-play file so downloads still work when ffmpeg is not installed.
+  return `best[height<=${height}][ext=mp4]/best[height<=${height}]/bestvideo[height<=${height}]+bestaudio/best`;
+}
+
+async function probeDirectMedia(target: URL): Promise<{ contentType: string; fileName?: string } | null> {
+  let current = target;
+
+  for (let redirects = 0; redirects < 4; redirects += 1) {
+    await validatePublicUrl(current.toString());
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8_000);
+    let response: Response;
+
+    try {
+      response = await fetch(current, {
+        method: "HEAD",
+        redirect: "manual",
+        headers: REQUEST_HEADERS,
+        signal: controller.signal,
+      });
+    } catch {
+      clearTimeout(timer);
+      return null;
+    }
+    clearTimeout(timer);
+
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get("location");
+      if (!location) return null;
+      current = new URL(location, current);
+      continue;
+    }
+
+    let contentType = (response.headers.get("content-type") || "").split(";", 1)[0].trim();
+    if ((response.status === 405 || response.status === 403 || !contentType) && !response.body) {
+      const fallbackController = new AbortController();
+      const fallbackTimer = setTimeout(() => fallbackController.abort(), 8_000);
+      try {
+        response = await fetch(current, {
+          headers: { ...REQUEST_HEADERS, Range: "bytes=0-0" },
+          redirect: "manual",
+          signal: fallbackController.signal,
+        });
+        contentType = (response.headers.get("content-type") || "").split(";", 1)[0].trim();
+        await response.body?.cancel();
+      } catch {
+        return null;
+      } finally {
+        clearTimeout(fallbackTimer);
+      }
+    }
+    if (!MEDIA_CONTENT_TYPES.test(contentType) && contentType !== "application/octet-stream") return null;
+
+    const disposition = response.headers.get("content-disposition") || "";
+    const fileName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
+      || disposition.match(/filename=["']?([^;"']+)/i)?.[1];
+    return { contentType, fileName };
+  }
+
+  return null;
 }
 
 function startExtractorJob(target: URL, fileName: string, quality: string, format: string) {
@@ -291,7 +355,7 @@ async function pipeDirectMedia(target: URL, res: express.Response, fileName: str
 
   for (let redirects = 0; redirects < 4; redirects += 1) {
     await validatePublicUrl(current.toString());
-    upstream = await fetch(current, { redirect: "manual" });
+    upstream = await fetch(current, { redirect: "manual", headers: REQUEST_HEADERS });
     if ([301, 302, 303, 307, 308].includes(upstream.status)) {
       const location = upstream.headers.get("location");
       if (!location) throw new Error("The media server returned an invalid redirect.");
@@ -389,11 +453,14 @@ async function startServer() {
         }
       }
 
-      if (MEDIA_EXTENSIONS.test(parsed.toString())) {
+      const directProbe = MEDIA_EXTENSIONS.test(parsed.toString())
+        ? { contentType: "" }
+        : await probeDirectMedia(parsed);
+      if (directProbe) {
         return res.json({
           platform: "other",
           platformName: "Direct Media",
-          title: titleFromUrl(parsed),
+          title: directProbe.fileName ? safeFileName(directProbe.fileName) : titleFromUrl(parsed),
           author: "Public source",
           thumbnail: "",
           views: "Direct media file",
