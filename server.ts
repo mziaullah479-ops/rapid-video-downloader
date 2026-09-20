@@ -37,6 +37,19 @@ const REQUEST_HEADERS = {
   "User-Agent": "Mozilla/5.0 (compatible; RapidVideoDownloader/1.0)",
   Accept: "video/*,audio/*,application/octet-stream;q=0.9,*/*;q=0.5",
 };
+const PAGE_HEADERS = {
+  ...REQUEST_HEADERS,
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.8",
+};
+
+function mediaHeaders(target: URL): Record<string, string> {
+  const headers = { ...REQUEST_HEADERS };
+  const hostname = target.hostname.toLowerCase();
+  if (hostname.includes("tiktokcdn")) headers.Referer = "https://www.tiktok.com/";
+  if (hostname.includes("fbcdn") || hostname.includes("facebook")) headers.Referer = "https://www.facebook.com/";
+  return headers;
+}
 const downloadJobs = new Map<string, {
   id: string;
   filePath: string;
@@ -166,6 +179,9 @@ function extractorUserMessage(error: unknown, sourcePlatform?: string): string {
   if (sourcePlatform === "youtube" && /sign in to confirm|cookies-from-browser|cookies for the authentication|not a bot/i.test(raw)) {
     return "YouTube requires sign-in verification for this video. This downloader cannot bypass that security check. Use YouTube's official download controls or provide a direct media URL you are authorized to save.";
   }
+  if (sourcePlatform === "tiktok" && /unexpected response|webpage request|blocked/i.test(raw)) {
+    return "TikTok did not expose a public download stream for this link. Try a public video link or provide a direct media URL you are authorized to save.";
+  }
   return raw.trim().slice(-800) || "The media extractor could not download this item.";
 }
 
@@ -209,6 +225,81 @@ function formatTags(value: unknown, fallback: string[]): string[] {
     : fallback;
 }
 
+function decodePageValue(value: string): string {
+  return value
+    .replace(/\\u0026/g, "&")
+    .replace(/\\\//g, "/")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+async function fetchPageText(url: string, headers: Record<string, string> = {}): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const response = await fetch(url, {
+      redirect: "follow",
+      headers: { ...PAGE_HEADERS, ...headers },
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`The public page returned HTTP ${response.status}.`);
+    return await response.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function metaContent(html: string, name: string): string | undefined {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  for (const tag of html.match(/<meta\b[^>]*>/gi) || []) {
+    if (!new RegExp(`(?:property|name)=["']${escapedName}["']`, "i").test(tag)) continue;
+    const content = tag.match(/content=["']([^"']+)["']/i)?.[1];
+    if (content) return decodePageValue(content);
+  }
+  return undefined;
+}
+
+type PublicMediaFallback = {
+  title?: string;
+  author?: string;
+  thumbnail?: string;
+  downloadUrl: string;
+};
+
+async function resolveTikTokPublicMedia(target: URL): Promise<PublicMediaFallback | null> {
+  const videoId = target.pathname.match(/\/video\/(\d+)/i)?.[1];
+  if (!videoId) return null;
+
+  const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(target.toString())}`;
+  const oembed = JSON.parse(await fetchPageText(oembedUrl, { Accept: "application/json,text/plain,*/*" })) as Record<string, unknown>;
+  const embedHtml = await fetchPageText(`https://www.tiktok.com/embed/v2/${videoId}`, { Referer: target.toString() });
+  const videoUrl = embedHtml.match(/https?:\/\/[^"'<> ]+mime_type=video_mp4[^"'<> ]*/i)?.[0];
+  if (!videoUrl) return null;
+
+  return {
+    title: typeof oembed.title === "string" ? oembed.title : undefined,
+    author: typeof oembed.author_name === "string" ? oembed.author_name : undefined,
+    thumbnail: typeof oembed.thumbnail_url === "string" ? oembed.thumbnail_url : undefined,
+    downloadUrl: decodePageValue(videoUrl),
+  };
+}
+
+async function resolveOpenGraphMedia(target: URL): Promise<PublicMediaFallback | null> {
+  const html = await fetchPageText(target.toString(), { Referer: target.origin });
+  const downloadUrl = metaContent(html, "og:video")
+    || metaContent(html, "og:video:url")
+    || metaContent(html, "twitter:player:stream");
+  if (!downloadUrl) return null;
+
+  return {
+    title: metaContent(html, "og:title"),
+    author: metaContent(html, "article:author"),
+    thumbnail: metaContent(html, "og:image"),
+    downloadUrl,
+  };
+}
+
 function safeFileName(rawName: string): string {
   const clean = rawName.replace(/[^a-zA-Z0-9._ -]/g, "_").trim();
   return (clean || "rapid_download.mp4").slice(0, 180);
@@ -238,7 +329,7 @@ async function probeDirectMedia(target: URL): Promise<{ contentType: string; fil
       response = await fetch(current, {
         method: "HEAD",
         redirect: "manual",
-        headers: REQUEST_HEADERS,
+        headers: mediaHeaders(current),
         signal: controller.signal,
       });
     } catch {
@@ -260,7 +351,7 @@ async function probeDirectMedia(target: URL): Promise<{ contentType: string; fil
       const fallbackTimer = setTimeout(() => fallbackController.abort(), 8_000);
       try {
         response = await fetch(current, {
-          headers: { ...REQUEST_HEADERS, Range: "bytes=0-0" },
+          headers: { ...mediaHeaders(current), Range: "bytes=0-0" },
           redirect: "manual",
           signal: fallbackController.signal,
         });
@@ -355,7 +446,7 @@ async function pipeDirectMedia(target: URL, res: express.Response, fileName: str
 
   for (let redirects = 0; redirects < 4; redirects += 1) {
     await validatePublicUrl(current.toString());
-    upstream = await fetch(current, { redirect: "manual", headers: REQUEST_HEADERS });
+    upstream = await fetch(current, { redirect: "manual", headers: mediaHeaders(current) });
     if ([301, 302, 303, 307, 308].includes(upstream.status)) {
       const location = upstream.headers.get("location");
       if (!location) throw new Error("The media server returned an invalid redirect.");
@@ -435,6 +526,36 @@ async function startServer() {
           });
         } catch (extractorError) {
           console.warn("Extractor metadata unavailable:", extractorError);
+          let publicFallback: PublicMediaFallback | null = null;
+          try {
+            publicFallback = platform.id === "tiktok"
+              ? await resolveTikTokPublicMedia(parsed)
+              : platform.id === "facebook"
+                ? await resolveOpenGraphMedia(parsed)
+                : null;
+          } catch (fallbackError) {
+            console.warn("Public embed fallback unavailable:", fallbackError);
+          }
+          if (publicFallback) {
+            return res.json({
+              platform: platform.id,
+              platformName: platform.name,
+              videoId: parsed.pathname.match(/\/video\/(\d+)/i)?.[1] || "",
+              title: publicFallback.title || `${platform.name} public video`,
+              author: publicFallback.author || "Public creator",
+              thumbnail: publicFallback.thumbnail || "",
+              duration: 0,
+              views: "Public data unavailable",
+              likes: "Public data unavailable",
+              uploadedDate: "Public date unavailable",
+              description: `A public ${platform.name} stream was detected from the platform embed.`,
+              tags: [platform.name.toLowerCase(), "public media"],
+              sourcePageUrl: parsed.toString(),
+              sourceUrl: parsed.toString(),
+              downloadSupported: true,
+              extractor: "public-embed",
+            });
+          }
           return res.json({
             platform: platform.id,
             platformName: platform.name,
@@ -536,6 +657,17 @@ async function startServer() {
         res.setHeader("Content-Disposition", contentDisposition(fileName));
         res.setHeader("Cache-Control", "no-store");
         return res.status(200).end();
+      }
+
+      if (platformForUrl(parsed).id === "tiktok") {
+        const publicFallback = await resolveTikTokPublicMedia(parsed);
+        if (publicFallback) {
+          if (format === "mp3") {
+            return res.status(400).json({ error: "The public TikTok embed exposes a video stream only. Choose MP4 for this link." });
+          }
+          await pipeDirectMedia(new URL(publicFallback.downloadUrl), res, fileName);
+          return;
+        }
       }
 
       if (isExtractorUrl(parsed)) {
