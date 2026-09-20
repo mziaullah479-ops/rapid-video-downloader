@@ -307,7 +307,8 @@ async function resolveTikTokPublicMedia(target: URL): Promise<PublicMediaFallbac
   const embedHtml = await fetchPageText(`https://www.tiktok.com/embed/v2/${videoId}`, { Referer: target.toString() });
   const videoUrl = embedHtml.match(/https?:\/\/[^"'<> ]+mime_type=video_mp4[^"'<> ]*/i)?.[0];
   if (!videoUrl) return null;
-  const avatarUrl = embedHtml.match(/style=["']background-image:url\((https?:\/\/[^)]+)["'][^>]*data-e2e=["']Player-Layer-LayerAvatar["']/i)?.[1];
+  const avatarTag = embedHtml.match(/<[^>]*data-e2e=["']Player-Layer-LayerAvatar["'][^>]*>/i)?.[0] || "";
+  const avatarUrl = avatarTag.match(/background-image:url\((https?:\/\/[^)]+)\)/i)?.[1];
   const caption = typeof oembed.title === "string" ? oembed.title : undefined;
   const tags = caption?.match(/#[\p{L}\p{N}_]+/gu)?.map((tag) => tag.slice(1)).slice(0, 16);
   const profileStats = embedHtml.match(/"authorStats":\{[\s\S]{0,500}?"followerCount":(\d+)/i);
