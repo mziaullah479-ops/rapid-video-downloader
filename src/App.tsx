@@ -63,14 +63,6 @@ export default function App() {
     trackEvent('screen_view', { screen: currentView });
   }, [currentView]);
 
-  useEffect(() => {
-    initAnalytics();
-    trackEvent('page_view');
-  }, []);
-
-  useEffect(() => {
-    trackEvent('screen_view', { screen: currentView });
-  }, [currentView]);
 
   const handleToggleMute = () => {
     const next = !isMuted;
