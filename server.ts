@@ -1,4 +1,4 @@
-iasync function startTikTokAudioJobmport express from "express";
+import express from "express";
 import fs from "node:fs";
 import { promises as fsPromises } from "node:fs";
 import crypto from "node:crypto";
@@ -493,7 +493,7 @@ function startExtractorJob(target: URL, fileName: string, quality: string, forma
   return job;
 }
 
-function startTikTokAudioJob(target: URL, fileName: string) {
+async function startTikTokAudioJob(target: URL, fileName: string) {
   const id = crypto.randomUUID();
   const filePath = path.join(os.tmpdir(), `rapid-${id}.mp3`);
   const job = { id, filePath, fileName, format: "mp3", status: "downloading" as const, progress: 5 };
