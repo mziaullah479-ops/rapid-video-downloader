@@ -111,7 +111,7 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
           setSaveMessage(statusText);
           if (percentage !== undefined) setProgress(percentage);
         },
-        { quality: option.resolution, format: option.format }
+        { quality: option.resolution, format: option.format, estimatedSizeMB: option.sizeMB }
       );
 
       if (result.success) {
