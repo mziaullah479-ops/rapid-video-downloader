@@ -202,7 +202,7 @@ export const AnalyzingScreen: React.FC<AnalyzingScreenProps> = ({
       {/* Live Hacker Terminal output */}
       <TerminalLog
         logs={logs}
-        title="CORE_MEDIA_DECRYPTOR"
+        title="CORE_MEDIA_RESOLVER"
         maxHeight="max-h-36"
       />
 
@@ -211,7 +211,7 @@ export const AnalyzingScreen: React.FC<AnalyzingScreenProps> = ({
         <div className="flex justify-between items-center text-xs font-mono-cyber">
           <span className="text-[#a0ece3] flex items-center gap-1.5">
             <ShieldCheck size={13} className="text-[#00ffd5]" />
-            <span>{isUrdu ? 'ویڈیو اور اسٹریم ڈیکوڈ ہو رہی ہے...' : 'Processing your video...'}</span>
+            <span>{isUrdu ? 'ویڈیو کا metadata اور stream چیک ہو رہا ہے...' : 'Resolving metadata and public stream...'}</span>
           </span>
           <span className="text-[#00ffd5] font-bold font-display text-sm">{progress}%</span>
         </div>
