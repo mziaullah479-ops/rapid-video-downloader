@@ -7,6 +7,7 @@ export interface DownloadResult {
 export interface DownloadRequestOptions {
   quality?: string;
   format?: string;
+  estimatedSizeMB?: number;
 }
 
 type DownloadProgress = (status: string, percentage?: number) => void;
@@ -52,6 +53,10 @@ export async function downloadFileToDevice(
   }
 
   const totalBytes = Number(response.headers.get('content-length') || 0);
+  const estimatedBytes = options.estimatedSizeMB && options.estimatedSizeMB > 0
+    ? options.estimatedSizeMB * 1024 * 1024
+    : 0;
+  const progressBytes = totalBytes || estimatedBytes;
   const contentType = response.headers.get('content-type') || 'application/octet-stream';
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -64,13 +69,17 @@ export async function downloadFileToDevice(
     if (!value) continue;
     chunks.push(value);
     receivedBytes += value.byteLength;
-    const percentage = totalBytes ? Math.min(99, Math.round((receivedBytes / totalBytes) * 100)) : undefined;
+    const percentage = progressBytes
+      ? Math.min(95, Math.round((receivedBytes / progressBytes) * 100))
+      : undefined;
     const now = Date.now();
     if (!percentage || now - lastUpdate > 180) {
       lastUpdate = now;
       onProgress?.(
         totalBytes
           ? `Received ${(receivedBytes / 1024 / 1024).toFixed(1)} MB of ${(totalBytes / 1024 / 1024).toFixed(1)} MB...`
+          : estimatedBytes
+            ? `Received ${(receivedBytes / 1024 / 1024).toFixed(1)} MB of about ${(estimatedBytes / 1024 / 1024).toFixed(1)} MB...`
           : `Received ${(receivedBytes / 1024 / 1024).toFixed(1)} MB...`,
         percentage
       );
