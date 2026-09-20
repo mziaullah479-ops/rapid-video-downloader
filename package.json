@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "postinstall": "python3 -m pip install --user --break-system-packages yt-dlp"
+    "postinstall": "mkdir -p .render/yt-dlp && python3 -m pip install --target .render/yt-dlp --upgrade yt-dlp"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
