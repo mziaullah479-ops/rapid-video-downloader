@@ -9,64 +9,79 @@ export interface DownloadRequestOptions {
   format?: string;
 }
 
-function triggerBrowserDownload(url: string, fileName: string) {
+type DownloadProgress = (status: string, percentage?: number) => void;
+
+function triggerBrowserDownload(blob: Blob, fileName: string) {
+  const blobUrl = window.URL.createObjectURL(blob);
   const anchor = document.createElement('a');
-  anchor.href = url;
+  anchor.href = blobUrl;
   anchor.download = fileName;
   anchor.rel = 'noopener';
   anchor.style.display = 'none';
   document.body.appendChild(anchor);
   anchor.click();
-  setTimeout(() => anchor.remove(), 1500);
+  setTimeout(() => {
+    anchor.remove();
+    window.URL.revokeObjectURL(blobUrl);
+  }, 30000);
 }
 
 export async function downloadFileToDevice(
   mediaUrl: string,
   fileName: string,
-  onProgress?: (status: string) => void,
+  onProgress?: DownloadProgress,
   options: DownloadRequestOptions = {}
 ): Promise<DownloadResult> {
   const safeFileName = fileName.trim() || 'video_download.mp4';
-  if (!mediaUrl.trim()) {
-    throw new Error('No downloadable media URL was provided.');
-  }
+  if (!mediaUrl.trim()) throw new Error('No downloadable media URL was provided.');
 
-  const query = new URLSearchParams({
-    url: mediaUrl,
-    filename: safeFileName,
-  });
+  const query = new URLSearchParams({ url: mediaUrl, filename: safeFileName });
   if (options.quality) query.set('quality', options.quality);
   if (options.format) query.set('format', options.format.toLowerCase());
 
-  const proxyUrl = `/api/download?${query.toString()}`;
-  onProgress?.('Checking the public media stream...');
-
-  try {
-    const head = await fetch(proxyUrl, { method: 'HEAD' });
-    if (head.ok) {
-      onProgress?.('Starting the real media download...');
-      triggerBrowserDownload(proxyUrl, safeFileName);
-      return {
-        success: true,
-        method: 'server-proxy',
-        message: 'The media download was started.',
-      };
-    }
-
-    const errorText = await head.text();
-    let message = 'The server could not prepare this media.';
+  onProgress?.('Connecting to the public media server...', 0);
+  const response = await fetch(`/api/download?${query.toString()}`);
+  if (!response.ok || !response.body) {
+    let message = `The media server returned HTTP ${response.status}.`;
     try {
-      message = JSON.parse(errorText).error || message;
+      message = (await response.json()).error || message;
     } catch {
-      // Keep the user-facing fallback message when the response is not JSON.
+      // Preserve the HTTP fallback when the response is not JSON.
     }
     return { success: false, method: 'direct', message };
-  } catch (error) {
-    console.warn('Media download request failed:', error);
-    return {
-      success: false,
-      method: 'direct',
-      message: 'The media server is unavailable. Please try again.',
-    };
   }
+
+  const totalBytes = Number(response.headers.get('content-length') || 0);
+  const contentType = response.headers.get('content-type') || 'application/octet-stream';
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let receivedBytes = 0;
+  let lastUpdate = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    chunks.push(value);
+    receivedBytes += value.byteLength;
+    const percentage = totalBytes ? Math.min(99, Math.round((receivedBytes / totalBytes) * 100)) : undefined;
+    const now = Date.now();
+    if (!percentage || now - lastUpdate > 180) {
+      lastUpdate = now;
+      onProgress?.(
+        totalBytes
+          ? `Received ${(receivedBytes / 1024 / 1024).toFixed(1)} MB of ${(totalBytes / 1024 / 1024).toFixed(1)} MB...`
+          : `Received ${(receivedBytes / 1024 / 1024).toFixed(1)} MB...`,
+        percentage
+      );
+    }
+  }
+
+  onProgress?.('Saving the verified media file to your device...', 100);
+  triggerBrowserDownload(new Blob(chunks, { type: contentType }), safeFileName);
+  return {
+    success: true,
+    method: 'blob',
+    message: 'The real media file was saved to your Downloads folder.',
+  };
 }
