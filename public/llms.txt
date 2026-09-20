@@ -8,6 +8,7 @@ Rapid Video Downloader is a browser-based tool at https://www.rapid-video-downlo
 - Shows title, creator, avatar, duration, date, views and likes when the source exposes them.
 - Offers MP4 or MP3 options only when the source provides a usable public stream.
 - Saves the resulting file through the user's browser.
+- Can be installed as a progressive web app on supported Android, desktop and ChromeOS browsers; iPhone users can use Safari's Add to Home Screen action.
 
 ## Supported public sources
 
@@ -29,5 +30,6 @@ YouTube, TikTok, Instagram, Facebook, X, Reddit, Pinterest, Vimeo, Dailymotion a
 - Instagram guide: https://www.rapid-video-downloader.online/instagram-video-downloader/
 - FAQ: https://www.rapid-video-downloader.online/faq/
 - About and limitations: https://www.rapid-video-downloader.online/about/
+- App manifest: https://www.rapid-video-downloader.online/manifest.webmanifest
 - Sitemap: https://www.rapid-video-downloader.online/sitemap.xml
 - Robots: https://www.rapid-video-downloader.online/robots.txt
