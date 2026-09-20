@@ -29,30 +29,30 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const faqs = isUrdu ? [
-    {
-      q: 'کیا یہ ویڈیو ڈاؤنلوڈر بالکل مفت ہے؟',
-      a: 'جی ہاں! ریپڈ ویڈیو ڈاؤنلوڈر 100٪ مفت ہے اور اس کے لیے کسی اکاؤنٹ یا سبسکرپشن کی ضرورت نہیں ہے۔'
+      {
+        q: 'کیا یہ ویڈیو ڈاؤنلوڈر بالکل مفت ہے؟',
+        a: 'جی ہاں، ویب ایپ مفت ہے اور اکاؤنٹ کی ضرورت نہیں۔ تاہم دستیابی سورس اور مفت سرور کی حدود پر منحصر ہو سکتی ہے۔'
     },
     {
       q: 'ڈاؤنلوڈ شدہ ویڈیوز میرے موبائل یا کمپیوٹر میں کہاں محفوظ ہوتی ہیں؟',
       a: 'جب آپ "SAVE FILE TO DEVICE" پر کلک کرتے ہیں تو فائل خودکار طور پر آپ کے فون کے "Downloads" فولڈر یا کمپیوٹر کی ڈیفالٹ ڈاؤنلوڈ ڈائرکٹری میں محفوظ ہو جاتی ہے۔'
     },
-    {
-      q: 'کیا ٹک ٹاک اور انسٹاگرام ویڈیوز بغیر واٹر مارک ڈاؤنلوڈ ہوتی ہیں؟',
-      a: 'بالکل! ہمارا سائبر بائی پاس انجن براہ راست سی ڈی این سے اصل ویڈیو اسٹریم حاصل کرتا ہے جس سے ٹک ٹاک اور انسٹاگرام کا واٹر مارک مکمل طور پر ختم ہو جاتا ہے۔'
+      {
+        q: 'کیا ہر ٹک ٹاک اور انسٹاگرام لنک ڈاؤنلوڈ ہو سکتا ہے؟',
+        a: 'صرف وہ عوامی یا مجاز اسٹریم دستیاب ہوتی ہے جو پلیٹ فارم خود فراہم کرے۔ نجی، DRM-protected یا login-required مواد اور watermark removal سپورٹ نہیں ہیں۔'
     },
-    {
-      q: 'کیا میں صرف آڈیو (MP3) ڈاؤنلوڈ کر سکتا ہوں؟',
-      a: 'جی ہاں، کوالٹی لسٹ میں "Audio Only (MP3)" منتخب کر کے آپ کسی بھی ویڈیو سے 320 kbps ہائی کوالٹی آڈیو فائل حاصل کر سکتے ہیں۔'
+      {
+        q: 'کیا میں صرف آڈیو (MP3) ڈاؤنلوڈ کر سکتا ہوں؟',
+        a: 'اگر عوامی سورس audio extraction فراہم کرے تو quality list میں "Audio Only (MP3)" option دکھایا جا سکتا ہے۔ format سورس پر منحصر ہے۔'
     },
-    {
-      q: 'کیا ڈاؤنلوڈ کرنے کی کوئی روزانہ حد ہے؟',
-      a: 'نہیں! آپ جتنی چاہیں ویڈیوز بغیر کسی پابندی یا اسپیڈ کی کمی کے ڈاؤنلوڈ کر سکتے ہیں۔'
+      {
+        q: 'کیا ڈاؤنلوڈ کرنے کی کوئی روزانہ حد ہے؟',
+        a: 'کوئی مخصوص روزانہ quota بیان نہیں کیا گیا، لیکن فائل سائز، مفت سرور اور سورس کی دستیابی کی حدود لاگو ہو سکتی ہیں۔'
     }
   ] : [
-    {
-      q: 'Is Rapid Video Downloader completely free to use?',
-      a: 'Yes, 100% free! There are no hidden fees, paid tiers, or account registrations required. Unlimited downloads forever.'
+      {
+        q: 'Is Rapid Video Downloader completely free to use?',
+        a: 'Yes. The web app is free to use and does not require an account. Availability can depend on the source and free server limits.'
     },
     {
       q: 'Where are downloaded files saved on my device?',
@@ -66,9 +66,9 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
       q: 'Can I extract audio only (MP3) from videos?',
       a: 'When the public source provides audio extraction, select the audio option. Availability and format depend on the source and the free server limits.'
     },
-    {
-      q: 'Is there any download limit or throttling?',
-      a: 'No daily or bandwidth limits. You can download as many videos as you want at maximum connection speed.'
+      {
+        q: 'Is there any download limit or throttling?',
+        a: 'There is no advertised daily quota, but file size, free server and source availability limits can apply.'
     }
   ];
 
@@ -84,9 +84,9 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
         <h2 className="text-lg md:text-xl font-display font-bold text-white leading-tight">
           {isUrdu ? 'ویڈیوز ڈاؤنلوڈ کرنے کا آسان طریقہ کار' : 'Master Any Video Stream in Seconds'}
         </h2>
-        <p className="text-xs text-[#a3e5dc] mt-1 leading-relaxed">
-          {isUrdu 
-            ? 'کسی بھی سوشل میڈیا پلیٹ فارم سے ویڈیو کا لنک کاپی کریں، اور بغیر واٹر مارک کے ہائی ڈیفینیشن میں محفوظ کریں۔'
+          <p className="text-xs text-[#a3e5dc] mt-1 leading-relaxed">
+            {isUrdu 
+             ? 'عوامی یا مجاز میڈیا لنک کاپی کریں، دستیاب metadata اور formats دیکھیں، پھر مجاز فائل محفوظ کریں۔'
              : 'Resolve public media links, inspect available formats, and save authorized files without bypassing platform protections.'}
         </p>
 
@@ -166,16 +166,16 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
                 step: '02',
                 title: isUrdu ? 'پیسٹ کریں اور کوالٹی منتخب کریں' : 'Paste & Select Quality',
                 desc: isUrdu
-                  ? 'ہمارے ہوم پیج پر لنک پیسٹ کر کے بٹن دبائیں۔ ویڈیو کے نیچے 1080p، 720p یا MP3 کوالٹی چنیں۔'
-                  : 'Paste the link on our Downloader page. Choose Full HD 1080p, 720p or MP3 Audio right below.',
+                   ? 'ہمارے ہوم پیج پر لنک پیسٹ کر کے بٹن دبائیں، پھر سورس کی طرف سے فراہم کردہ quality یا audio option منتخب کریں۔'
+                   : 'Paste the link on our Downloader page, then choose a quality or audio option provided by the source.',
                 icon: Layers
               },
               {
                 step: '03',
                 title: isUrdu ? 'فائل ڈیوائس پر محفوظ کریں' : 'Download Direct to Device',
                 desc: isUrdu
-                  ? 'ڈاؤنلوڈ بٹن دبائیں۔ ویڈیو بغیر واٹر مارک فوری طور پر آپ کے فون یا کمپیوٹر میں محفوظ ہو جائے گی۔'
-                  : 'Click "DOWNLOAD" and "SAVE TO DEVICE". The clean file is stored directly in your local Downloads folder.',
+                   ? 'ڈاؤنلوڈ بٹن دبائیں۔ دستیاب فائل آپ کے فون یا کمپیوٹر کے Downloads فولڈر میں محفوظ ہو جائے گی۔'
+                   : 'Click "DOWNLOAD" and "SAVE TO DEVICE". The available file is stored in your local Downloads folder.',
                 icon: Download
               }
             ].map((item, idx) => {
@@ -253,7 +253,7 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
                      {platform.id === 'tiktok' 
                        ? (isUrdu ? 'صرف عوامی یا مجاز ویڈیو اسٹریمز دستیاب ہوں تو محفوظ کریں۔' : 'Save public or authorized streams when the platform exposes them.')
                       : platform.id === 'youtube'
-                      ? (isUrdu ? 'یوٹیوب 1080p فل ایچ ڈی، شارٹس اور 320 kbps ایم پی تھری۔' : 'Full HD 1080p, Shorts, 60fps streams, MP3 track.')
+                       ? (isUrdu ? 'یوٹیوب ویڈیوز اور شارٹس کے لیے دستیاب public formats۔' : 'Public YouTube videos and Shorts when formats are available.')
                       : platform.id === 'instagram'
                       ? (isUrdu ? 'انسٹاگرام ریلز، پوسٹس اور کہانیاں اصل ریزولوشن میں۔' : 'Instagram Reels & carousel videos in clean MP4.')
                       : platform.id === 'facebook'
@@ -269,7 +269,7 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
           <div className="p-3.5 rounded-xl bg-[#04151b] border border-[#00ffd5]/20 space-y-2">
             <h4 className="text-xs font-mono-cyber font-bold text-[#00ffd5] flex items-center gap-1.5">
               <Video size={14} />
-              <span>{isUrdu ? 'سپورٹ شدہ فارمیٹس اور ریزولوشن' : 'Supported Formats & Resolutions'}</span>
+               <span>{isUrdu ? 'ممکنہ فارمیٹس اور ریزولوشن' : 'Common Formats & Resolutions'}</span>
             </h4>
             <div className="flex flex-wrap gap-1.5 text-xs">
               {['MP4 (1080p 60fps)', 'MP4 (720p HD)', 'MP4 (480p SD)', 'MP3 (320 kbps Audio)', 'M4A Stereo', 'WEBM'].map((fmt, i) => (
