@@ -375,7 +375,7 @@ async function startServer() {
             tags: [platform.name.toLowerCase(), "public media"],
             sourceUrl: parsed.toString(),
             downloadSupported: false,
-            downloadMessage: "This platform did not expose a downloadable public stream. Use the platform's own download controls or provide a direct public media URL.",
+             downloadMessage: "This platform did not expose a downloadable stream yet. Try again or use the platform's own download controls.",
           });
         }
       }
