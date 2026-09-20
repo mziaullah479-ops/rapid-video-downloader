@@ -1,0 +1,26 @@
+# Rapid Video Downloader
+
+Rapid Video Downloader is a browser-based tool at https://www.rapid-video-downloader.online/.
+
+## What it does
+
+- Inspects metadata for public or user-authorized media URLs.
+- Shows title, creator, avatar, duration, date, views and likes when the source exposes them.
+- Offers MP4 or MP3 options only when the source provides a usable public stream.
+- Saves the resulting file through the user's browser.
+
+## Supported public sources
+
+YouTube, TikTok, Instagram, Facebook, X, Reddit, Pinterest, Vimeo, Dailymotion and direct media URLs may be supported when they expose public media.
+
+## Limits
+
+- Private, login-required, DRM-protected and paywalled media is not supported.
+- The tool does not bypass security checks or remove watermarks.
+- Metadata and format availability depend on the source and server limits.
+
+## Helpful pages
+
+- Home: https://www.rapid-video-downloader.online/
+- Sitemap: https://www.rapid-video-downloader.online/sitemap.xml
+- Robots: https://www.rapid-video-downloader.online/robots.txt
