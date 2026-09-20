@@ -1,0 +1,46 @@
+:root {
+  color-scheme: dark;
+  --bg: #030d12;
+  --panel: #071b22;
+  --panel-2: #04151b;
+  --line: rgba(0, 255, 213, .24);
+  --text: #e0f7f6;
+  --muted: #a3e5dc;
+  --accent: #00ffd5;
+  --accent-2: #00e599;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0;
+  min-width: 320px;
+  background: radial-gradient(circle at 20% 0%, #0a2b35 0, transparent 36rem), var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.6;
+}
+a { color: var(--accent); }
+.shell { width: min(980px, calc(100% - 32px)); margin: 0 auto; }
+.topbar { padding: 24px 0 14px; border-bottom: 1px solid rgba(0, 255, 213, .12); }
+.brand { color: var(--text); text-decoration: none; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.nav { display: flex; flex-wrap: wrap; gap: 14px 20px; margin-top: 12px; font-size: .9rem; }
+.hero { padding: 72px 0 48px; }
+.eyebrow { color: var(--accent); font-size: .76rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+h1 { max-width: 780px; margin: 12px 0 18px; font-size: clamp(2.1rem, 6vw, 4.5rem); line-height: 1.02; letter-spacing: -.045em; }
+h2 { margin: 0 0 12px; font-size: clamp(1.35rem, 3vw, 2rem); line-height: 1.15; }
+h3 { margin: 0 0 7px; font-size: 1rem; }
+.lead { max-width: 700px; color: var(--muted); font-size: clamp(1.05rem, 2vw, 1.25rem); }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 0; }
+.button { display: inline-block; padding: 11px 17px; border-radius: 10px; background: var(--accent); color: #021318; font-weight: 800; text-decoration: none; }
+.button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 26px 0 52px; }
+.card { padding: 20px; background: linear-gradient(145deg, var(--panel), var(--panel-2)); border: 1px solid var(--line); border-radius: 16px; }
+.card p, .note, .faq dd { color: var(--muted); margin: 0; }
+.faq { margin: 12px 0 52px; }
+.faq dl { margin: 0; }
+.faq dt { margin-top: 16px; font-weight: 800; }
+.faq dd { margin: 5px 0 0; }
+.note { padding: 16px; border-left: 3px solid var(--accent); background: rgba(0, 255, 213, .07); }
+footer { padding: 28px 0 48px; color: #77bdb5; font-size: .9rem; border-top: 1px solid rgba(0, 255, 213, .12); }
+@media (max-width: 640px) { .hero { padding-top: 48px; } .shell { width: min(100% - 24px, 980px); } }
