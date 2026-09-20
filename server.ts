@@ -1,6 +1,10 @@
 import express from "express";
+import fs from "node:fs";
+import { promises as fsPromises } from "node:fs";
+import crypto from "node:crypto";
 import dns from "node:dns/promises";
 import net from "node:net";
+import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { Readable } from "node:stream";
@@ -28,6 +32,15 @@ const EXTRACTOR_HOSTS = [
 ];
 
 const MEDIA_EXTENSIONS = /\.(?:mp4|webm|mov|m4v|mkv|avi|mp3|m4a|wav|ogg|flac)(?:$|[?#])/i;
+const downloadJobs = new Map<string, {
+  id: string;
+  filePath: string;
+  fileName: string;
+  format: string;
+  status: "downloading" | "ready" | "error";
+  progress: number;
+  error?: string;
+}>();
 
 function extractorEnvironment() {
   const bundledPath = path.join(process.cwd(), ".render", "yt-dlp");
@@ -198,6 +211,71 @@ function extractorFormat(quality: string, format: string): string {
   return `bestvideo[height<=${height}]+bestaudio/best[height<=${height}]/best`;
 }
 
+function startExtractorJob(target: URL, fileName: string, quality: string, format: string) {
+  const id = crypto.randomUUID();
+  const extension = format === "mp3" ? "mp3" : "mp4";
+  const filePath = path.join(os.tmpdir(), `rapid-${id}.${extension}`);
+  const job = { id, filePath, fileName, format, status: "downloading" as const, progress: 0 };
+  downloadJobs.set(id, job);
+
+  const args = [
+    "--no-playlist",
+    "--no-warnings",
+    "--newline",
+    "--retries",
+    "1",
+    "--socket-timeout",
+    "20",
+    "--max-filesize",
+    `${MAX_DOWNLOAD_BYTES}`,
+    "--format",
+    extractorFormat(quality, format),
+    "--merge-output-format",
+    "mp4",
+    "--output",
+    filePath,
+  ];
+  if (format === "mp3") args.push("--extract-audio", "--audio-format", "mp3");
+  args.push(target.toString());
+
+  const child = spawn(process.env.YTDLP_BIN || "python3", ["-m", "yt_dlp", ...args], {
+    env: extractorEnvironment(),
+  });
+  let errorOutput = "";
+  const updateProgress = (chunk: Buffer) => {
+    const text = chunk.toString();
+    const match = text.match(/(\d+(?:\.\d+)?)%/);
+    if (match) job.progress = Math.min(99, Number(match[1]));
+  };
+  child.stdout.on("data", updateProgress);
+  child.stderr.on("data", (chunk) => {
+    const text = chunk.toString();
+    errorOutput += text;
+    updateProgress(chunk);
+  });
+  child.once("error", (error) => {
+    job.status = "error";
+    job.error = error.message;
+  });
+  child.once("close", async (code) => {
+    if (code === 0) {
+      job.status = "ready";
+      job.progress = 100;
+    } else {
+      job.status = "error";
+      job.error = errorOutput.trim().slice(-800) || "The media extractor could not download this item.";
+      await fsPromises.unlink(filePath).catch(() => undefined);
+    }
+  });
+
+  setTimeout(async () => {
+    await fsPromises.unlink(filePath).catch(() => undefined);
+    downloadJobs.delete(id);
+  }, 15 * 60 * 1000);
+
+  return job;
+}
+
 async function pipeDirectMedia(target: URL, res: express.Response, fileName: string) {
   let current = target;
   let upstream: Response | undefined;
@@ -327,6 +405,46 @@ async function startServer() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to resolve this URL.";
       return res.status(400).json({ error: message });
+    }
+  });
+
+  app.post("/api/download/jobs", async (req, res) => {
+    try {
+      const targetUrl = String(req.body?.url || "").trim();
+      const parsed = await validatePublicUrl(targetUrl);
+      if (!isExtractorUrl(parsed)) {
+        return res.status(400).json({ error: "Background jobs are only used for supported platform links." });
+      }
+      const fileName = safeFileName(String(req.body?.filename || "rapid_download.mp4"));
+      const format = String(req.body?.format || "mp4").toLowerCase();
+      const quality = String(req.body?.quality || "1080p");
+      const job = startExtractorJob(parsed, fileName, quality, format);
+      return res.status(202).json({ jobId: job.id, status: job.status });
+    } catch (error) {
+      return res.status(400).json({ error: error instanceof Error ? error.message : "Unable to start download." });
+    }
+  });
+
+  app.get("/api/download/jobs/:jobId", (req, res) => {
+    const job = downloadJobs.get(req.params.jobId);
+    if (!job) return res.status(404).json({ error: "Download job expired or was not found." });
+    return res.json({ jobId: job.id, status: job.status, progress: job.progress, error: job.error });
+  });
+
+  app.get("/api/download/jobs/:jobId/file", async (req, res) => {
+    const job = downloadJobs.get(req.params.jobId);
+    if (!job) return res.status(404).json({ error: "Download job expired or was not found." });
+    if (job.status !== "ready") return res.status(409).json({ error: job.error || "The download is not ready yet." });
+
+    try {
+      const stat = await fsPromises.stat(job.filePath);
+      res.setHeader("Content-Disposition", contentDisposition(job.fileName));
+      res.setHeader("Content-Type", job.format === "mp3" ? "audio/mpeg" : "video/mp4");
+      res.setHeader("Content-Length", String(stat.size));
+      res.setHeader("Cache-Control", "no-store");
+      fs.createReadStream(job.filePath).pipe(res);
+    } catch {
+      return res.status(404).json({ error: "The prepared media file is no longer available." });
     }
   });
 
