@@ -1,20 +1,26 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Rapid Video Downloader
 
-# Run and deploy your AI Studio app
+A free React and Express app for resolving metadata and downloading public or user-authorized media when the source exposes a downloadable stream.
 
-This contains everything you need to run your app locally.
+## Safety
 
-View your app in AI Studio: https://ai.studio/apps/aaf67c3b-ce47-4b18-b23d-3fe4c85ce356
+- Private, login-protected, DRM-protected, and paywalled content is not supported.
+- Watermark removal and security bypass are not supported.
+- The server rejects local/private network targets and limits proxied files to 250 MB.
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+Prerequisites: Node.js, npm, and Python 3.
 
+1. Install dependencies with `npm install`. The install step places `yt-dlp` in `.render/yt-dlp` for public platform extraction.
+2. Start development mode with `npm run dev`.
+3. Build with `npm run build` and start production mode with `npm start`.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Deployment
+
+The project is configured for a free Render Web Service. Use:
+
+- Build command: `npm install --legacy-peer-deps && npm run build`
+- Start command: `npm run start`
+
+Free instances can sleep after inactivity. Large or slow downloads may exceed free-hosting limits.
