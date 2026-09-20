@@ -16,7 +16,7 @@ export const SUPPORTED_PLATFORMS: PlatformInfo[] = [
     badge: 'TT',
     iconColor: '#00f2fe',
     urlPlaceholder: 'https://www.tiktok.com/@creator/video/...',
-    sampleUrl: 'https://www.tiktok.com/@khaby.lame/video/728910482910382',
+    sampleUrl: '',
     domainKeywords: ['tiktok.com', 'vm.tiktok.com', 'vt.tiktok.com']
   },
   {
@@ -25,7 +25,7 @@ export const SUPPORTED_PLATFORMS: PlatformInfo[] = [
     badge: 'IG',
     iconColor: '#e1306c',
     urlPlaceholder: 'https://www.instagram.com/reel/...',
-    sampleUrl: 'https://www.instagram.com/reel/C3x918LpzQv/',
+    sampleUrl: '',
     domainKeywords: ['instagram.com', 'instagr.am']
   },
   {
@@ -34,7 +34,7 @@ export const SUPPORTED_PLATFORMS: PlatformInfo[] = [
     badge: 'FB',
     iconColor: '#1877f2',
     urlPlaceholder: 'https://www.facebook.com/watch/?v=...',
-    sampleUrl: 'https://www.facebook.com/watch/?v=987123456789',
+    sampleUrl: '',
     domainKeywords: ['facebook.com', 'fb.watch', 'fb.com']
   },
   {
@@ -43,7 +43,7 @@ export const SUPPORTED_PLATFORMS: PlatformInfo[] = [
     badge: 'X',
     iconColor: '#ffffff',
     urlPlaceholder: 'https://x.com/user/status/...',
-    sampleUrl: 'https://x.com/elonmusk/status/178920194827163',
+    sampleUrl: '',
     domainKeywords: ['twitter.com', 'x.com', 't.co']
   },
   {
@@ -52,7 +52,7 @@ export const SUPPORTED_PLATFORMS: PlatformInfo[] = [
     badge: 'RD',
     iconColor: '#ff4500',
     urlPlaceholder: 'https://www.reddit.com/r/.../comments/...',
-    sampleUrl: 'https://www.reddit.com/r/technology/comments/cyber_ai_video',
+    sampleUrl: '',
     domainKeywords: ['reddit.com', 'redd.it']
   },
   {
@@ -61,7 +61,7 @@ export const SUPPORTED_PLATFORMS: PlatformInfo[] = [
     badge: 'PIN',
     iconColor: '#e60023',
     urlPlaceholder: 'https://www.pinterest.com/pin/...',
-    sampleUrl: 'https://www.pinterest.com/pin/1094093259489201948/',
+    sampleUrl: '',
     domainKeywords: ['pinterest.com', 'pin.it']
   },
   {
@@ -79,7 +79,7 @@ export const SUPPORTED_PLATFORMS: PlatformInfo[] = [
     badge: 'DM',
     iconColor: '#0066dc',
     urlPlaceholder: 'https://www.dailymotion.com/video/...',
-    sampleUrl: 'https://www.dailymotion.com/video/x8y123',
+    sampleUrl: '',
     domainKeywords: ['dailymotion.com', 'dai.ly']
   }
 ];
