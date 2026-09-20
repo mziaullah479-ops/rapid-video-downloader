@@ -90,6 +90,7 @@ async function downloadViaBackgroundJob(
   fileName: string,
   onProgress: DownloadProgress | undefined,
   options: DownloadRequestOptions,
+  retryCount = 0,
 ): Promise<DownloadResult> {
   onProgress?.('Queueing a background media job...', 1);
   const response = await fetch('/api/download/jobs', {
@@ -127,6 +128,10 @@ async function downloadViaBackgroundJob(
       } catch {
         // Preserve the HTTP fallback when the response is not JSON.
       }
+      if (statusResponse.status === 404 && retryCount < 1) {
+        onProgress?.('The server restarted; restarting the download job...', 1);
+        return downloadViaBackgroundJob(mediaUrl, fileName, onProgress, options, retryCount + 1);
+      }
       return { success: false, method: 'server-proxy', message };
     }
 
@@ -140,7 +145,12 @@ async function downloadViaBackgroundJob(
     }
     if (status.status === 'ready') {
       const fileResponse = await fetch(`/api/download/jobs/${encodeURIComponent(jobId)}/file`);
-      return responseToFile(fileResponse, fileName, onProgress, options.estimatedSizeMB);
+      const result = await responseToFile(fileResponse, fileName, onProgress, options.estimatedSizeMB);
+      if (!result.success && fileResponse.status === 404 && retryCount < 1) {
+        onProgress?.('The prepared file expired; restarting the download job...', 1);
+        return downloadViaBackgroundJob(mediaUrl, fileName, onProgress, options, retryCount + 1);
+      }
+      return result;
     }
 
     const progress = typeof status.progress === 'number' ? Math.min(94, Math.max(2, status.progress)) : 2;
