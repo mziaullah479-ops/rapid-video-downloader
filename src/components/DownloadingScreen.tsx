@@ -129,6 +129,7 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
             type: 'success'
           }
         ]);
+        handleDownloadFinished();
       } else {
         setDownloadError(result.message);
         setSaveMessage(result.message);
