@@ -781,6 +781,7 @@ async function startServer() {
     "/facebook-downloader": "/facebook-video-downloader/",
     "/tiktok-no-watermark": "/tiktok-video-downloader/",
     "/blog/extract-audio-from-tiktok-instagram-mp3": "/video-to-mp3/",
+    "/sitemap-seo.xml": "/sitemap.xml",
   };
 
   app.use((req, res, next) => {
