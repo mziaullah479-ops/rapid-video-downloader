@@ -59,12 +59,12 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
       a: 'When you click "SAVE FILE TO DEVICE", files are directly dispatched by your browser to your device’s default Downloads folder (Files app on mobile, or Downloads folder on PC/Mac).'
     },
     {
-      q: 'Are TikTok and Instagram videos downloaded without watermarks?',
-      a: 'Yes! Our CDN stream decrypter bypasses embedded watermark overlays, giving you clean, original resolution video files directly.'
+      q: 'Can every TikTok and Instagram link be downloaded?',
+      a: 'No. A download works only when the platform exposes a public stream and you have permission to save it. Private content, DRM, and watermark removal are not supported.'
     },
     {
       q: 'Can I extract audio only (MP3) from videos?',
-      a: 'Yes! Simply select the "Audio Only (MP3)" quality option before downloading to obtain a crystal-clear 320 kbps stereo audio file.'
+      a: 'When the public source provides audio extraction, select the audio option. Availability and format depend on the source and the free server limits.'
     },
     {
       q: 'Is there any download limit or throttling?',
@@ -87,7 +87,7 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
         <p className="text-xs text-[#a3e5dc] mt-1 leading-relaxed">
           {isUrdu 
             ? 'کسی بھی سوشل میڈیا پلیٹ فارم سے ویڈیو کا لنک کاپی کریں، اور بغیر واٹر مارک کے ہائی ڈیفینیشن میں محفوظ کریں۔'
-            : 'Download clean videos in 1080p Full HD, 4K, and 320 kbps MP3 without intrusive logos or watermarks.'}
+             : 'Resolve public media links, inspect available formats, and save authorized files without bypassing platform protections.'}
         </p>
 
         {/* Action Button to Home */}
