@@ -9,6 +9,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { Readable } from "node:stream";
 import { createServer as createViteServer } from "vite";
+import ffmpegPath from "ffmpeg-static";
 
 const MAX_DOWNLOAD_BYTES = 250 * 1024 * 1024;
 const EXTRACTOR_HOSTS = [
@@ -492,6 +493,60 @@ function startExtractorJob(target: URL, fileName: string, quality: string, forma
   return job;
 }
 
+function startTikTokAudioJob(target: URL, fileName: string) {
+  const id = crypto.randomUUID();
+  const filePath = path.join(os.tmpdir(), `rapid-${id}.mp3`);
+  const job = { id, filePath, fileName, format: "mp3", status: "downloading" as const, progress: 5 };
+  downloadJobs.set(id, job);
+
+  if (!ffmpegPath) {
+    job.status = "error";
+    job.error = "Audio conversion is not available on this server.";
+    return job;
+  }
+
+  const child = spawn(ffmpegPath, [
+    "-y",
+    "-loglevel",
+    "error",
+    "-headers",
+    "Referer: https://www.tiktok.com/\r\nUser-Agent: Mozilla/5.0\r\n",
+    "-i",
+    target.toString(),
+    "-vn",
+    "-codec:a",
+    "libmp3lame",
+    "-b:a",
+    "192k",
+    filePath,
+  ]);
+  let errorOutput = "";
+  child.stderr.on("data", (chunk) => {
+    errorOutput += chunk.toString();
+  });
+  child.once("error", (error) => {
+    job.status = "error";
+    job.error = error.message;
+  });
+  child.once("close", async (code) => {
+    if (code === 0) {
+      job.status = "ready";
+      job.progress = 100;
+    } else {
+      job.status = "error";
+      job.error = errorOutput.trim().slice(-800) || "TikTok audio conversion failed.";
+      await fsPromises.unlink(filePath).catch(() => undefined);
+    }
+  });
+
+  setTimeout(async () => {
+    await fsPromises.unlink(filePath).catch(() => undefined);
+    downloadJobs.delete(id);
+  }, 15 * 60 * 1000);
+
+  return job;
+}
+
 async function pipeDirectMedia(target: URL, res: express.Response, fileName: string) {
   let current = target;
   let upstream: Response | undefined;
@@ -695,6 +750,13 @@ async function startServer() {
       const fileName = safeFileName(String(req.body?.filename || "rapid_download.mp4"));
       const format = String(req.body?.format || "mp4").toLowerCase();
       const quality = String(req.body?.quality || "1080p");
+      if (format === "mp3" && platformForUrl(parsed).id === "tiktok") {
+        const publicFallback = await resolveTikTokPublicMedia(parsed);
+        if (publicFallback?.downloadUrl) {
+          const job = startTikTokAudioJob(new URL(publicFallback.downloadUrl), fileName);
+          return res.status(202).json({ jobId: job.id, status: job.status });
+        }
+      }
       const job = startExtractorJob(parsed, fileName, quality, format);
       return res.status(202).json({ jobId: job.id, status: job.status });
     } catch (error) {
