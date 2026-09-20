@@ -49,7 +49,7 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
   const [logs, setLogs] = useState<TerminalLogType[]>([
     { id: 'dl-1', timestamp: '10:25:14', text: 'Download pipeline initiated...', type: 'cyan' },
     { id: 'dl-2', timestamp: '10:25:16', text: 'Connecting to direct edge media server...', type: 'info' },
-    { id: 'dl-3', timestamp: '10:25:18', text: `Preparing ${option.label} (${option.resolution || option.format}) from the public source...`, type: 'matrix' },
+    { id: 'dl-3', timestamp: '10:25:18', text: `Preparing ${option.label} (${option.resolution || option.format}) from the source...`, type: 'matrix' },
   ]);
 
   const handleDownloadFinished = () => {
@@ -99,7 +99,7 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
         {
           id: `save-${Date.now()}`,
           timestamp: nowStr,
-          text: `Requesting real media bytes from the public source: ${fileName}...`,
+          text: `Requesting real media bytes from the source: ${fileName}...`,
           type: 'info'
         }
       ]);
