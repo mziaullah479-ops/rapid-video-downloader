@@ -63,7 +63,7 @@ export function detectPlatform(url: string): { id: PlatformId; name: string } {
 export function generateDownloadOptions(
   videoId: string, 
   durationSec: number = 300,
-  sampleUrl: string = WORKING_SAMPLE_STREAM
+  sampleUrl: string = ''
 ): DownloadOption[] {
   // Approximate realistic file sizes based on duration (MB)
   const base1080p = Math.max(18.5, Number(((durationSec / 60) * 22).toFixed(1)));
@@ -80,8 +80,8 @@ export function generateDownloadOptions(
       format: 'MP4',
       resolution: '1080p',
       sizeMB: base1080p,
-      noWatermark: true,
-      qualityTag: 'Clean Stream (No Watermark)',
+      noWatermark: false,
+      qualityTag: 'Original public stream',
       bitrate: '8,000 kbps',
       fps: 60,
       sampleMediaUrl: sampleUrl
@@ -93,7 +93,7 @@ export function generateDownloadOptions(
       format: 'MP4',
       resolution: '720p',
       sizeMB: base720p,
-      noWatermark: true,
+      noWatermark: false,
       qualityTag: 'Standard HD',
       bitrate: '4,500 kbps',
       fps: 60,
@@ -106,7 +106,7 @@ export function generateDownloadOptions(
       format: 'MP4',
       resolution: '480p',
       sizeMB: base480p,
-      noWatermark: true,
+      noWatermark: false,
       qualityTag: 'Medium Quality',
       bitrate: '2,200 kbps',
       fps: 30,
@@ -119,7 +119,7 @@ export function generateDownloadOptions(
       format: 'MP4',
       resolution: '360p',
       sizeMB: base360p,
-      noWatermark: true,
+      noWatermark: false,
       qualityTag: 'Compact Size',
       bitrate: '1,200 kbps',
       fps: 30,
@@ -131,7 +131,7 @@ export function generateDownloadOptions(
       badge: 'MP3',
       format: 'MP3',
       sizeMB: baseAudio,
-      noWatermark: true,
+      noWatermark: false,
       qualityTag: '320 kbps Stereo Audio',
       bitrate: '320 kbps',
       sampleMediaUrl: sampleUrl
@@ -223,12 +223,14 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
         uploadedDate: 'Verified Stream',
         duration: 240,
         durationFormatted: '04:00',
-        description: `Direct original YouTube media stream: "${title}" by ${author}. Watermark stripped and decrypted for multi-resolution direct device download.`,
-        tags: ['youtube', 'original', 'hd', 'no-watermark', 'clean-stream', videoId],
+        description: `Public YouTube media stream: "${title}" by ${author}. Download availability depends on the source and platform permissions.`,
+        tags: ['youtube', 'original', 'hd', videoId],
         thumbnail: thumbnail || fallbackThumb,
         previewVideoUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1`,
         youtubeVideoId: videoId,
-        options: generateDownloadOptions(videoId, 240)
+         downloadSupported: serverData?.downloadSupported === true,
+         downloadMessage: serverData?.downloadMessage,
+         options: generateDownloadOptions(videoId, Number(serverData?.duration || 240), cleanUrl)
       };
     }
   }
@@ -237,7 +239,7 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
   if (platformId === 'tiktok') {
     const info = extractTikTokInfo(cleanUrl);
     const authorName = serverData?.author || (info?.author ? `@${info.author}` : '@tiktok.creator');
-    const title = serverData?.title || `TikTok Viral Video (${authorName}) - Clean No Watermark`;
+    const title = serverData?.title || `TikTok Video (${authorName})`;
     const thumb = serverData?.thumbnail || SAMPLE_VIDEOS.tiktok_viral.thumbnail;
 
     return {
@@ -247,14 +249,16 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
       author: authorName,
       title: title,
       thumbnail: thumb,
-      options: generateDownloadOptions('tt-' + Date.now(), 45)
+       downloadSupported: serverData?.downloadSupported === true,
+       downloadMessage: serverData?.downloadMessage,
+       options: generateDownloadOptions('tt-' + Date.now(), Number(serverData?.duration || 45), cleanUrl)
     };
   }
 
   // 3. INSTAGRAM RESOLUTION
   if (platformId === 'instagram') {
     const code = extractInstagramCode(cleanUrl);
-    const title = serverData?.title || `Instagram Reel [${code || 'Stream'}] - No Watermark 1080p`;
+    const title = serverData?.title || `Instagram Reel [${code || 'Stream'}]`;
     const author = serverData?.author || 'Instagram Creator';
     const thumb = serverData?.thumbnail || SAMPLE_VIDEOS.instagram_reel.thumbnail;
 
@@ -265,7 +269,9 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
       title: title,
       author: author,
       thumbnail: thumb,
-      options: generateDownloadOptions('ig-' + (code || Date.now()), 60)
+       downloadSupported: serverData?.downloadSupported === true,
+       downloadMessage: serverData?.downloadMessage,
+       options: generateDownloadOptions('ig-' + (code || Date.now()), Number(serverData?.duration || 60), cleanUrl)
     };
   }
 
@@ -282,7 +288,9 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
       title: title,
       author: author,
       thumbnail: thumb,
-      options: generateDownloadOptions('fb-' + Date.now(), 180)
+       downloadSupported: serverData?.downloadSupported === true,
+       downloadMessage: serverData?.downloadMessage,
+       options: generateDownloadOptions('fb-' + Date.now(), Number(serverData?.duration || 180), cleanUrl)
     };
   }
 
@@ -299,7 +307,9 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
       title: title,
       author: author,
       thumbnail: thumb,
-      options: generateDownloadOptions('x-' + Date.now(), 50)
+       downloadSupported: serverData?.downloadSupported === true,
+       downloadMessage: serverData?.downloadMessage,
+       options: generateDownloadOptions('x-' + Date.now(), Number(serverData?.duration || 50), cleanUrl)
     };
   }
 
@@ -324,11 +334,13 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
       uploadedDate: 'Recent',
       duration: 75,
       durationFormatted: '01:15',
-      description: `Original Reddit post media extracted without audio desync or watermark. Ready for download in MP4 format.`,
-      tags: ['reddit', 'video', 'clean', 'viral'],
+      description: `Public Reddit post media. Download availability depends on the post and platform permissions.`,
+      tags: ['reddit', 'video', 'public'],
       thumbnail: thumb,
       previewVideoUrl: WORKING_SAMPLE_STREAM,
-      options: generateDownloadOptions('rd-' + Date.now(), 75)
+      downloadSupported: serverData?.downloadSupported === true,
+      downloadMessage: serverData?.downloadMessage,
+      options: generateDownloadOptions('rd-' + Date.now(), Number(serverData?.duration || 75), cleanUrl)
     };
   }
 
@@ -357,7 +369,9 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
       tags: ['pinterest', 'video', 'pin', 'hd'],
       thumbnail: thumb,
       previewVideoUrl: WORKING_SAMPLE_STREAM,
-      options: generateDownloadOptions('pin-' + Date.now(), 35)
+      downloadSupported: serverData?.downloadSupported === true,
+      downloadMessage: serverData?.downloadMessage,
+      options: generateDownloadOptions('pin-' + Date.now(), Number(serverData?.duration || 35), cleanUrl)
     };
   }
 
@@ -386,7 +400,9 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
       tags: ['vimeo', 'cinema', 'master', 'high-bitrate'],
       thumbnail: thumb,
       previewVideoUrl: WORKING_SAMPLE_STREAM,
-      options: generateDownloadOptions('vm-' + Date.now(), 180)
+      downloadSupported: serverData?.downloadSupported === true,
+      downloadMessage: serverData?.downloadMessage,
+      options: generateDownloadOptions('vm-' + Date.now(), Number(serverData?.duration || 180), cleanUrl)
     };
   }
 
@@ -396,7 +412,7 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
   const cleanTitle = serverData?.title || (lastPart
     .replace(/[?#].*$/, '')
     .replace(/[-_]/g, ' ')
-    .substring(0, 50) || 'Decrypted Media Stream');
+    .substring(0, 50) || 'Direct Media Stream');
 
   return {
     id: `media-${Date.now()}`,
@@ -413,10 +429,12 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
     uploadedDate: 'Recent',
     duration: 180,
     durationFormatted: '03:00',
-    description: `Original media content extracted from ${cleanUrl}. Watermark filtering active. Ready for direct save.`,
-    tags: [platformId, 'download', 'media', 'watermarkfree'],
+    description: `Public media content from ${cleanUrl}. Download is available only when the source exposes a direct public stream.`,
+    tags: [platformId, 'download', 'media', 'public'],
     thumbnail: serverData?.thumbnail || 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
     previewVideoUrl: WORKING_SAMPLE_STREAM,
-    options: generateDownloadOptions('univ-' + Date.now(), 180)
+    downloadSupported: serverData?.downloadSupported === true,
+    downloadMessage: serverData?.downloadMessage,
+    options: generateDownloadOptions('univ-' + Date.now(), Number(serverData?.duration || 180), cleanUrl)
   };
 }
