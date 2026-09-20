@@ -50,7 +50,7 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
   const [logs, setLogs] = useState<TerminalLogType[]>([
     { id: 'dl-1', timestamp: '10:25:14', text: 'Download pipeline initiated...', type: 'cyan' },
     { id: 'dl-2', timestamp: '10:25:16', text: 'Connecting to direct edge media server...', type: 'info' },
-    { id: 'dl-3', timestamp: '10:25:18', text: `Streaming ${option.label} (${option.resolution || option.format}) [No Watermark]...`, type: 'matrix' },
+    { id: 'dl-3', timestamp: '10:25:18', text: `Preparing ${option.label} (${option.resolution || option.format}) from the public source...`, type: 'matrix' },
   ]);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -164,7 +164,7 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
       downloadedAt: 'Just now',
       sizeMB: option.sizeMB,
       status: 'completed',
-      mediaUrl: option.sampleMediaUrl
+      mediaUrl: option.downloadUrl || option.sampleMediaUrl
     };
 
     onFinish(historyItem);
@@ -195,11 +195,12 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
       ]);
 
       const result = await downloadFileToDevice(
-        option.sampleMediaUrl,
+        option.downloadUrl || option.sampleMediaUrl,
         fileName,
         (statusText) => {
           setSaveMessage(statusText);
-        }
+        },
+        { quality: option.resolution, format: option.format }
       );
 
       if (result.success) {
