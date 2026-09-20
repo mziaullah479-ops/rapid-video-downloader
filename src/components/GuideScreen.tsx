@@ -246,12 +246,12 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
                       {platform.name}
                     </span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#00ffd5]/15 text-[#00ffd5] font-mono-cyber">
-                      NO WATERMARK
+                       PUBLIC SOURCE
                     </span>
                   </div>
                   <p className="text-[11px] text-[#91dbd0] leading-snug">
-                    {platform.id === 'tiktok' 
-                      ? (isUrdu ? 'ٹک ٹاک ویڈیوز بغیر لوگو اور ایچ ڈی آڈیو۔' : 'Strips logo watermark, saves 1080p MP4 and MP3.')
+                     {platform.id === 'tiktok' 
+                       ? (isUrdu ? 'صرف عوامی یا مجاز ویڈیو اسٹریمز دستیاب ہوں تو محفوظ کریں۔' : 'Save public or authorized streams when the platform exposes them.')
                       : platform.id === 'youtube'
                       ? (isUrdu ? 'یوٹیوب 1080p فل ایچ ڈی، شارٹس اور 320 kbps ایم پی تھری۔' : 'Full HD 1080p, Shorts, 60fps streams, MP3 track.')
                       : platform.id === 'instagram'
