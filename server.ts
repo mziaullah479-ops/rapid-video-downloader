@@ -23,6 +23,7 @@ const EXTRACTOR_HOSTS = [
   "fb.com",
   "twitter.com",
   "x.com",
+  "t.co",
   "reddit.com",
   "redd.it",
   "pinterest.com",
@@ -61,6 +62,118 @@ const downloadJobs = new Map<string, {
   error?: string;
 }>();
 
+type AnalyticsEvent = {
+  id: string;
+  name: string;
+  timestamp: string;
+  visitorId: string;
+  country: string;
+  path?: string;
+  platform?: string;
+  format?: string;
+  quality?: string;
+  success?: boolean;
+};
+
+const analyticsStartedAt = new Date().toISOString();
+const analyticsEvents: AnalyticsEvent[] = [];
+const adminSessions = new Map<string, number>();
+const MAX_ANALYTICS_EVENTS = 10_000;
+const ADMIN_SESSION_MS = 8 * 60 * 60 * 1000;
+
+function requestAnalyticsContext(req: express.Request) {
+  const rawVisitor = String(req.headers["x-visitor-id"] || req.ip || "anonymous");
+  const rawCountry = String(
+    req.headers["cf-ipcountry"]
+      || req.headers["x-country-code"]
+      || req.headers["x-vercel-ip-country"]
+      || "Unknown",
+  );
+  return {
+    visitorId: rawVisitor.slice(0, 120),
+    country: /^[a-z]{2}$/i.test(rawCountry) ? rawCountry.toUpperCase() : "Unknown",
+  };
+}
+
+function recordAnalyticsEvent(req: express.Request, name: string, details: Omit<AnalyticsEvent, "id" | "name" | "timestamp" | "visitorId" | "country"> = {}) {
+  const context = requestAnalyticsContext(req);
+  analyticsEvents.push({
+    id: crypto.randomUUID(),
+    name,
+    timestamp: new Date().toISOString(),
+    ...context,
+    ...details,
+  });
+  if (analyticsEvents.length > MAX_ANALYTICS_EVENTS) analyticsEvents.splice(0, analyticsEvents.length - MAX_ANALYTICS_EVENTS);
+}
+
+function readCookie(req: express.Request, name: string): string | undefined {
+  const cookies = String(req.headers.cookie || "").split(";");
+  const entry = cookies.find((cookie) => cookie.trim().startsWith(`${name}=`));
+  return entry ? decodeURIComponent(entry.trim().slice(name.length + 1)) : undefined;
+}
+
+function secureStringEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function isAdminAuthenticated(req: express.Request): boolean {
+  const token = readCookie(req, "rapid_admin");
+  const expiresAt = token ? adminSessions.get(token) : undefined;
+  if (!expiresAt || expiresAt < Date.now()) {
+    if (token) adminSessions.delete(token);
+    return false;
+  }
+  return true;
+}
+
+function analyticsMetrics() {
+  const now = Date.now();
+  const recentEvents = analyticsEvents.filter((event) => now - Date.parse(event.timestamp) <= 15 * 60 * 1000);
+  const pageViews = analyticsEvents.filter((event) => event.name === "page_view");
+  const downloadsStarted = analyticsEvents.filter((event) => event.name === "download_started");
+  const downloadsCompleted = analyticsEvents.filter((event) => event.name === "download_completed" && event.success !== false);
+  const downloadsFailed = analyticsEvents.filter((event) => event.name === "download_failed" || event.success === false);
+  const unique = (events: AnalyticsEvent[]) => new Set(events.map((event) => event.visitorId)).size;
+  const countBy = (events: AnalyticsEvent[], key: "country" | "platform" | "format") => {
+    const counts = new Map<string, number>();
+    for (const event of events) {
+      const value = event[key] || "Unknown";
+      counts.set(value, (counts.get(value) || 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((left, right) => right.count - left.count)
+      .slice(0, 12);
+  };
+
+  return {
+    generatedAt: new Date().toISOString(),
+    capturedSince: analyticsStartedAt,
+    retention: "Current running service instance",
+    pageViews: pageViews.length,
+    activeUsers: unique(recentEvents),
+    downloadsStarted: downloadsStarted.length,
+    downloadsCompleted: downloadsCompleted.length,
+    downloadsFailed: downloadsFailed.length,
+    successRate: downloadsStarted.length ? Math.round((downloadsCompleted.length / downloadsStarted.length) * 100) : 0,
+    countries: countBy(pageViews, "country"),
+    platforms: countBy(downloadsStarted, "platform"),
+    formats: countBy(downloadsStarted, "format"),
+    recentActivity: analyticsEvents.slice(-18).reverse().map((event) => ({
+      id: event.id,
+      name: event.name,
+      timestamp: event.timestamp,
+      country: event.country,
+      platform: event.platform,
+      format: event.format,
+      success: event.success,
+    })),
+  };
+}
+
 function extractorEnvironment() {
   const bundledPath = path.join(process.cwd(), ".render", "yt-dlp");
   return {
@@ -68,6 +181,10 @@ function extractorEnvironment() {
     PYTHONUNBUFFERED: "1",
     PYTHONPATH: [bundledPath, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter),
   };
+}
+
+function extractorFfmpegArgs(): string[] {
+  return ffmpegPath ? ["--ffmpeg-location", ffmpegPath] : [];
 }
 
 function isPrivateAddress(address: string): boolean {
@@ -134,7 +251,7 @@ function platformForUrl(url: URL): { id: string; name: string } {
   if (hostname.includes("tiktok")) return { id: "tiktok", name: "TikTok" };
   if (hostname.includes("instagram") || hostname.includes("instagr.am")) return { id: "instagram", name: "Instagram" };
   if (hostname.includes("facebook") || hostname === "fb.watch" || hostname === "fb.com") return { id: "facebook", name: "Facebook" };
-  if (hostname.includes("twitter") || hostname === "x.com") return { id: "twitter", name: "X (Twitter)" };
+  if (hostname.includes("twitter") || hostname === "x.com" || hostname === "t.co") return { id: "twitter", name: "X (Twitter)" };
   if (hostname.includes("reddit") || hostname === "redd.it") return { id: "reddit", name: "Reddit" };
   if (hostname.includes("pinterest") || hostname === "pin.it") return { id: "pinterest", name: "Pinterest" };
   if (hostname.includes("vimeo")) return { id: "vimeo", name: "Vimeo" };
@@ -367,6 +484,35 @@ function extractorFormat(quality: string, format: string): string {
   return `best[height<=${height}][ext=mp4]/best[height<=${height}]/bestvideo[height<=${height}]+bestaudio/best`;
 }
 
+function transcodeToMp3(sourcePath: string, outputPath: string): Promise<void> {
+  if (!ffmpegPath) return Promise.reject(new Error("Audio conversion is not available on this server."));
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(ffmpegPath, [
+      "-y",
+      "-loglevel",
+      "error",
+      "-i",
+      sourcePath,
+      "-vn",
+      "-codec:a",
+      "libmp3lame",
+      "-b:a",
+      "192k",
+      outputPath,
+    ]);
+    let errorOutput = "";
+    child.stderr.on("data", (chunk) => {
+      errorOutput += chunk.toString();
+    });
+    child.once("error", reject);
+    child.once("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(errorOutput.trim().slice(-800) || "Audio conversion failed."));
+    });
+  });
+}
+
 async function probeDirectMedia(target: URL): Promise<{ contentType: string; fileName?: string } | null> {
   let current = target;
 
@@ -429,9 +575,16 @@ function startExtractorJob(target: URL, fileName: string, quality: string, forma
   const id = crypto.randomUUID();
   const extension = format === "mp3" ? "mp3" : "mp4";
   const filePath = path.join(os.tmpdir(), `rapid-${id}.${extension}`);
+  const sourcePath = path.join(os.tmpdir(), `rapid-${id}-source`);
   const sourcePlatform = platformForUrl(target).id;
   const job = { id, filePath, fileName, format, status: "downloading" as const, progress: 0 };
   downloadJobs.set(id, job);
+
+  if (format === "mp3" && !ffmpegPath) {
+    job.status = "error";
+    job.error = "Audio conversion is not available on this server.";
+    return job;
+  }
 
   const args = [
     "--no-playlist",
@@ -448,11 +601,11 @@ function startExtractorJob(target: URL, fileName: string, quality: string, forma
     "--output",
     filePath,
   ];
-  if (format === "mp3") {
-    args.push("--extract-audio", "--audio-format", "mp3");
-  } else {
+  if (format !== "mp3") {
     args.splice(args.indexOf("--output"), 0, "--merge-output-format", "mp4");
   }
+  args.push(...extractorFfmpegArgs());
+  if (format === "mp3") args[args.indexOf("--output") + 1] = sourcePath;
   args.push(target.toString());
 
   const child = spawn(process.env.YTDLP_BIN || "python3", ["-m", "yt_dlp", ...args], {
@@ -476,17 +629,33 @@ function startExtractorJob(target: URL, fileName: string, quality: string, forma
   });
   child.once("close", async (code) => {
     if (code === 0) {
-      job.status = "ready";
-      job.progress = 100;
+      if (format === "mp3") {
+        try {
+          job.progress = 92;
+          await transcodeToMp3(sourcePath, filePath);
+          job.status = "ready";
+          job.progress = 100;
+        } catch (error) {
+          job.status = "error";
+          job.error = extractorUserMessage(error, sourcePlatform);
+          await fsPromises.unlink(filePath).catch(() => undefined);
+        }
+        await fsPromises.unlink(sourcePath).catch(() => undefined);
+      } else {
+        job.status = "ready";
+        job.progress = 100;
+      }
     } else {
       job.status = "error";
        job.error = extractorUserMessage(errorOutput, sourcePlatform);
       await fsPromises.unlink(filePath).catch(() => undefined);
+      await fsPromises.unlink(sourcePath).catch(() => undefined);
     }
   });
 
   setTimeout(async () => {
     await fsPromises.unlink(filePath).catch(() => undefined);
+    await fsPromises.unlink(sourcePath).catch(() => undefined);
     downloadJobs.delete(id);
   }, 15 * 60 * 1000);
 
@@ -629,11 +798,49 @@ async function startServer() {
     res.json({ status: "ok", extractor: process.env.YTDLP_BIN || "python3 -m yt_dlp", timestamp: new Date().toISOString() });
   });
 
+  app.post("/api/analytics/event", (req, res) => {
+    const name = String(req.body?.name || "").trim().slice(0, 80);
+    if (!name) return res.status(400).json({ error: "An analytics event name is required." });
+    recordAnalyticsEvent(req, name, {
+      path: typeof req.body?.path === "string" ? req.body.path.slice(0, 240) : undefined,
+      platform: typeof req.body?.platform === "string" ? req.body.platform.slice(0, 40) : undefined,
+      format: typeof req.body?.format === "string" ? req.body.format.slice(0, 20) : undefined,
+      quality: typeof req.body?.quality === "string" ? req.body.quality.slice(0, 20) : undefined,
+      success: typeof req.body?.success === "boolean" ? req.body.success : undefined,
+    });
+    return res.status(204).end();
+  });
+
+  app.post("/api/admin/login", (req, res) => {
+    const configuredPassword = String(process.env.ADMIN_PASSWORD || "");
+    if (!configuredPassword) return res.status(503).json({ error: "The admin password is not configured yet." });
+    const password = String(req.body?.password || "");
+    if (!secureStringEqual(password, configuredPassword)) return res.status(401).json({ error: "Incorrect admin password." });
+
+    const token = crypto.randomBytes(32).toString("hex");
+    adminSessions.set(token, Date.now() + ADMIN_SESSION_MS);
+    res.setHeader("Set-Cookie", `rapid_admin=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${Math.floor(ADMIN_SESSION_MS / 1000)}`);
+    return res.json({ ok: true });
+  });
+
+  app.post("/api/admin/logout", (req, res) => {
+    const token = readCookie(req, "rapid_admin");
+    if (token) adminSessions.delete(token);
+    res.setHeader("Set-Cookie", "rapid_admin=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0");
+    return res.status(204).end();
+  });
+
+  app.get("/api/admin/metrics", (req, res) => {
+    if (!isAdminAuthenticated(req)) return res.status(401).json({ error: "Admin authentication is required." });
+    return res.json(analyticsMetrics());
+  });
+
   app.get("/api/resolve-video", async (req, res) => {
     try {
       const targetUrl = String(req.query.url || "").trim();
       const parsed = await validatePublicUrl(targetUrl);
       const platform = platformForUrl(parsed);
+      recordAnalyticsEvent(req, "resolve_started", { platform: platform.id });
 
       if (isExtractorUrl(parsed)) {
         try {
@@ -805,6 +1012,7 @@ async function startServer() {
       const fileName = safeFileName(String(req.query.filename || "rapid_download.mp4"));
       const format = String(req.query.format || "mp4").toLowerCase();
       const quality = String(req.query.quality || "1080p");
+      recordAnalyticsEvent(req, "download_started", { platform: platformForUrl(parsed).id, format, quality });
 
       if (req.method === "HEAD") {
         res.setHeader("Content-Disposition", contentDisposition(fileName));
@@ -818,6 +1026,38 @@ async function startServer() {
           await pipeDirectMedia(new URL(publicFallback.downloadUrl), res, fileName);
           return;
         }
+        if (publicFallback?.downloadUrl && format === "mp3") {
+          const job = await startTikTokAudioJob(new URL(publicFallback.downloadUrl), fileName);
+          const deadline = Date.now() + 14 * 60 * 1000;
+          while (job.status === "downloading" && Date.now() < deadline) {
+            await new Promise((resolve) => setTimeout(resolve, 1_500));
+          }
+          if (job.status !== "ready") throw new Error(job.error || "The audio download took too long and expired.");
+          const stat = await fsPromises.stat(job.filePath);
+          res.setHeader("Content-Disposition", contentDisposition(job.fileName));
+          res.setHeader("Content-Type", "audio/mpeg");
+          res.setHeader("Content-Length", String(stat.size));
+          res.setHeader("Cache-Control", "no-store");
+          fs.createReadStream(job.filePath).pipe(res);
+          return;
+        }
+      }
+
+      if (format === "mp3" && isExtractorUrl(parsed)) {
+        const job = startExtractorJob(parsed, fileName, quality, format);
+        const deadline = Date.now() + 14 * 60 * 1000;
+        while (job.status === "downloading" && Date.now() < deadline) {
+          await new Promise((resolve) => setTimeout(resolve, 1_500));
+        }
+        if (job.status !== "ready") throw new Error(job.error || "The audio download took too long and expired.");
+
+        const stat = await fsPromises.stat(job.filePath);
+        res.setHeader("Content-Disposition", contentDisposition(job.fileName));
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Content-Length", String(stat.size));
+        res.setHeader("Cache-Control", "no-store");
+        fs.createReadStream(job.filePath).pipe(res);
+        return;
       }
 
       if (isExtractorUrl(parsed)) {
@@ -834,12 +1074,11 @@ async function startServer() {
           `${MAX_DOWNLOAD_BYTES}`,
           "--format",
           extractorFormat(quality, format),
-          "--merge-output-format",
-          "mp4",
+          ...(format === "mp3" ? ["--extract-audio", "--audio-format", "mp3"] : ["--merge-output-format", "mp4"]),
+          ...extractorFfmpegArgs(),
           "--output",
           "-",
         ];
-        if (format === "mp3") extractorArgs.push("--extract-audio", "--audio-format", "mp3");
         extractorArgs.push(parsed.toString());
 
         res.setHeader("Content-Disposition", contentDisposition(fileName));
