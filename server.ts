@@ -263,9 +263,39 @@ function metaContent(html: string, name: string): string | undefined {
 type PublicMediaFallback = {
   title?: string;
   author?: string;
+  authorAvatar?: string;
+  authorVerified?: boolean;
   thumbnail?: string;
+  subscribersOrFollowers?: string;
+  views?: string;
+  likes?: string;
+  uploadedDate?: string;
+  duration?: number;
+  description?: string;
+  tags?: string[];
+  previewVideoUrl?: string;
   downloadUrl: string;
 };
+
+function pageNumber(html: string, key: string): number | undefined {
+  const match = html.match(new RegExp(`"${key}"\\s*:\\s*(\\d+)`));
+  return match ? Number(match[1]) : undefined;
+}
+
+function pageStringNumber(html: string, key: string): number | undefined {
+  const match = html.match(new RegExp(`"${key}"\\s*:\\s*"(\\d+)"`));
+  return match ? Number(match[1]) : undefined;
+}
+
+function formatUnixDate(value: number | undefined): string {
+  if (!value) return "Public date unavailable";
+  return new Date(value * 1000).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
 
 async function resolveTikTokPublicMedia(target: URL): Promise<PublicMediaFallback | null> {
   const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(target.toString())}`;
@@ -277,11 +307,27 @@ async function resolveTikTokPublicMedia(target: URL): Promise<PublicMediaFallbac
   const embedHtml = await fetchPageText(`https://www.tiktok.com/embed/v2/${videoId}`, { Referer: target.toString() });
   const videoUrl = embedHtml.match(/https?:\/\/[^"'<> ]+mime_type=video_mp4[^"'<> ]*/i)?.[0];
   if (!videoUrl) return null;
+  const avatarUrl = embedHtml.match(/style=["']background-image:url\((https?:\/\/[^)]+)["'][^>]*data-e2e=["']Player-Layer-LayerAvatar["']/i)?.[1];
+  const caption = typeof oembed.title === "string" ? oembed.title : undefined;
+  const tags = caption?.match(/#[\p{L}\p{N}_]+/gu)?.map((tag) => tag.slice(1)).slice(0, 16);
+  const profileStats = embedHtml.match(/"authorStats":\{[\s\S]{0,500}?"followerCount":(\d+)/i);
+  const followerCount = profileStats ? Number(profileStats[1]) : undefined;
+  const createTime = pageStringNumber(embedHtml, "createTime");
 
   return {
-    title: typeof oembed.title === "string" ? oembed.title : undefined,
+    title: caption,
     author: typeof oembed.author_name === "string" ? oembed.author_name : undefined,
+    authorAvatar: avatarUrl ? decodePageValue(avatarUrl) : undefined,
+    authorVerified: /"verified":true/i.test(embedHtml),
     thumbnail: typeof oembed.thumbnail_url === "string" ? oembed.thumbnail_url : undefined,
+    subscribersOrFollowers: followerCount ? formatCount(followerCount) : undefined,
+    views: pageNumber(embedHtml, "playCount") ? formatCount(pageNumber(embedHtml, "playCount")) : undefined,
+    likes: pageNumber(embedHtml, "diggCount") ? formatCount(pageNumber(embedHtml, "diggCount")) : undefined,
+    uploadedDate: formatUnixDate(createTime),
+    duration: pageNumber(embedHtml, "duration"),
+    description: caption || "Public description unavailable.",
+    tags: tags && tags.length > 0 ? tags : ["tiktok", "public media"],
+    previewVideoUrl: decodePageValue(videoUrl),
     downloadUrl: decodePageValue(videoUrl),
   };
 }
@@ -297,6 +343,8 @@ async function resolveOpenGraphMedia(target: URL): Promise<PublicMediaFallback |
     title: metaContent(html, "og:title"),
     author: metaContent(html, "article:author"),
     thumbnail: metaContent(html, "og:image"),
+    description: metaContent(html, "og:description") || "Public description unavailable.",
+    tags: ["facebook", "public media"],
     downloadUrl,
   };
 }
@@ -507,20 +555,27 @@ async function startServer() {
           return res.json({
             platform: platform.id,
             platformName: platform.name,
-            videoId: String(data.id || ""),
-            title: String(data.title || `${platform.name} media`),
-            author: String(data.uploader || data.channel || data.creator || "Public creator"),
-            thumbnail: typeof data.thumbnail === "string" ? data.thumbnail : "",
-            duration: Number(data.duration || 0),
+              videoId: String(data.id || ""),
+              title: String(data.title || `${platform.name} media`),
+              author: String(data.uploader || data.channel || data.creator || "Public creator"),
+              authorAvatar: typeof data.uploader_thumbnail === "string"
+                ? data.uploader_thumbnail
+                : typeof data.channel_thumbnail === "string"
+                  ? data.channel_thumbnail
+                  : "",
+              authorVerified: data.uploader_verified === true || data.channel_is_verified === true,
+              thumbnail: typeof data.thumbnail === "string" ? data.thumbnail : "",
+              duration: Number(data.duration || 0),
             views: formatCount(data.view_count),
             likes: formatCount(data.like_count),
             uploadedDate: formatUploadDate(data.upload_date),
-            description: typeof data.description === "string"
-              ? data.description.trim().slice(0, 1600)
-              : "Public description unavailable.",
-            tags: formatTags(data.tags, [platform.name.toLowerCase(), "public media"]),
-            subscribersOrFollowers: formatCount(data.channel_follower_count),
-            sourcePageUrl: typeof data.webpage_url === "string" ? data.webpage_url : parsed.toString(),
+              description: typeof data.description === "string"
+                ? data.description.trim().slice(0, 1600)
+                : "Public description unavailable.",
+              tags: formatTags(data.tags, [platform.name.toLowerCase(), "public media"]),
+              subscribersOrFollowers: formatCount(data.channel_follower_count),
+              previewVideoUrl: typeof data.url === "string" && /^https?:\/\//i.test(data.url) ? data.url : "",
+              sourcePageUrl: typeof data.webpage_url === "string" ? data.webpage_url : parsed.toString(),
             sourceUrl: parsed.toString(),
             downloadSupported: true,
             extractor: "yt-dlp",
@@ -544,13 +599,17 @@ async function startServer() {
               videoId: parsed.pathname.match(/\/video\/(\d+)/i)?.[1] || "",
               title: publicFallback.title || `${platform.name} public video`,
               author: publicFallback.author || "Public creator",
+              authorAvatar: publicFallback.authorAvatar || "",
+              authorVerified: publicFallback.authorVerified === true,
               thumbnail: publicFallback.thumbnail || "",
-              duration: 0,
-              views: "Public data unavailable",
-              likes: "Public data unavailable",
-              uploadedDate: "Public date unavailable",
-              description: `A public ${platform.name} stream was detected from the platform embed.`,
-              tags: [platform.name.toLowerCase(), "public media"],
+              duration: publicFallback.duration || 0,
+              views: publicFallback.views || "Public data unavailable",
+              likes: publicFallback.likes || "Public data unavailable",
+              uploadedDate: publicFallback.uploadedDate || "Public date unavailable",
+              description: publicFallback.description || `A public ${platform.name} stream was detected from the platform embed.`,
+              tags: publicFallback.tags || [platform.name.toLowerCase(), "public media"],
+              subscribersOrFollowers: publicFallback.subscribersOrFollowers || "Public data unavailable",
+              previewVideoUrl: publicFallback.previewVideoUrl || "",
               sourcePageUrl: parsed.toString(),
               sourceUrl: parsed.toString(),
               downloadSupported: true,
