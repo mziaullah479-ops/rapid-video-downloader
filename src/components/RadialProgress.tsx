@@ -59,7 +59,7 @@ export const RadialProgress: React.FC<RadialProgressProps> = ({
             {Math.round(percentage)}%
           </span>
           <span className="text-[11px] font-mono-cyber text-[#00ffd5]/70 uppercase tracking-widest mt-0.5">
-            DECRYPTING
+            STREAMING
           </span>
         </div>
       </div>
