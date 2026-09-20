@@ -55,12 +55,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Content */}
         <div className="p-4 space-y-4 text-xs">
-          {/* Watermark Removal Engine */}
+           {/* Public media guardrails */}
           <div className="p-3 bg-[#030e13] rounded-xl border border-[#00ffd5]/20 space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-white font-semibold flex items-center gap-1.5">
                 <ShieldCheck size={14} className="text-[#00ffd5]" />
-                {isUrdu ? 'واٹر مارک بائی پاس انجن' : 'Watermark Bypass Engine'}
+                 {isUrdu ? 'عوامی میڈیا سیفٹی' : 'Public Media Safety'}
               </span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#00ffd5]/20 text-[#00ffd5] font-bold">
                 ACTIVE
@@ -68,8 +68,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
             <p className="text-[11px] text-[#00ffd5]/60 leading-relaxed">
               {isUrdu 
-                ? 'براہ راست CDN اسٹریم ہائی جیکنگ کے ذریعے ٹک ٹاک، انسٹاگرام اور فیس بک ویڈیوز سے تمام واٹر مارک فوری حذف ہو جاتے ہیں۔'
-                : 'Direct raw CDN stream extraction strips TikTok, Instagram & Facebook logos before packet encoding.'}
+                 ? 'صرف عوامی یا مجاز میڈیا اسٹریمز استعمال کریں۔ نجی مواد، DRM اور واٹر مارک بائی پاس نہیں کیے جاتے۔'
+                 : 'Only public or authorized media streams are handled. Private content, DRM, and watermark bypass are not supported.'}
             </p>
           </div>
 
