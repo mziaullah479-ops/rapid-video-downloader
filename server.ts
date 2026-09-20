@@ -156,9 +156,9 @@ function runYtDlp(args: string[], timeoutMs = 30_000): Promise<string> {
   });
 }
 
-function extractorUserMessage(error: unknown): string {
+function extractorUserMessage(error: unknown, sourcePlatform?: string): string {
   const raw = error instanceof Error ? error.message : String(error || "");
-  if (/sign in to confirm|cookies-from-browser|cookies for the authentication|not a bot/i.test(raw)) {
+  if (sourcePlatform === "youtube" && /sign in to confirm|cookies-from-browser|cookies for the authentication|not a bot/i.test(raw)) {
     return "YouTube requires sign-in verification for this video. This downloader cannot bypass that security check. Use YouTube's official download controls or provide a direct media URL you are authorized to save.";
   }
   return raw.trim().slice(-800) || "The media extractor could not download this item.";
@@ -223,6 +223,7 @@ function startExtractorJob(target: URL, fileName: string, quality: string, forma
   const id = crypto.randomUUID();
   const extension = format === "mp3" ? "mp3" : "mp4";
   const filePath = path.join(os.tmpdir(), `rapid-${id}.${extension}`);
+  const sourcePlatform = platformForUrl(target).id;
   const job = { id, filePath, fileName, format, status: "downloading" as const, progress: 0 };
   downloadJobs.set(id, job);
 
@@ -263,7 +264,7 @@ function startExtractorJob(target: URL, fileName: string, quality: string, forma
   });
   child.once("error", (error) => {
     job.status = "error";
-    job.error = extractorUserMessage(error);
+    job.error = extractorUserMessage(error, sourcePlatform);
   });
   child.once("close", async (code) => {
     if (code === 0) {
@@ -271,7 +272,7 @@ function startExtractorJob(target: URL, fileName: string, quality: string, forma
       job.progress = 100;
     } else {
       job.status = "error";
-       job.error = extractorUserMessage(errorOutput);
+       job.error = extractorUserMessage(errorOutput, sourcePlatform);
       await fsPromises.unlink(filePath).catch(() => undefined);
     }
   });
@@ -383,7 +384,7 @@ async function startServer() {
             tags: [platform.name.toLowerCase(), "public media"],
             sourceUrl: parsed.toString(),
             downloadSupported: false,
-             downloadMessage: extractorUserMessage(extractorError),
+             downloadMessage: extractorUserMessage(extractorError, platform.id),
           });
         }
       }
