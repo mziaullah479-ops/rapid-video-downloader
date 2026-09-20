@@ -163,6 +163,26 @@ function titleFromUrl(url: URL): string {
   return lastPart.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").slice(0, 100) || "Direct media file";
 }
 
+function formatCount(value: unknown): string {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value.toLocaleString("en-US")
+    : "Public data unavailable";
+}
+
+function formatUploadDate(value: unknown): string {
+  if (typeof value !== "string" || !/^\d{8}$/.test(value)) return "Public date unavailable";
+  const date = new Date(`${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}T00:00:00Z`);
+  return Number.isNaN(date.valueOf())
+    ? "Public date unavailable"
+    : date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
+function formatTags(value: unknown, fallback: string[]): string[] {
+  return Array.isArray(value)
+    ? value.filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0).slice(0, 16)
+    : fallback;
+}
+
 function safeFileName(rawName: string): string {
   const clean = rawName.replace(/[^a-zA-Z0-9._ -]/g, "_").trim();
   return (clean || "rapid_download.mp4").slice(0, 180);
@@ -249,6 +269,15 @@ async function startServer() {
             author: String(data.uploader || data.channel || data.creator || "Public creator"),
             thumbnail: typeof data.thumbnail === "string" ? data.thumbnail : "",
             duration: Number(data.duration || 0),
+            views: formatCount(data.view_count),
+            likes: formatCount(data.like_count),
+            uploadedDate: formatUploadDate(data.upload_date),
+            description: typeof data.description === "string"
+              ? data.description.trim().slice(0, 1600)
+              : "Public description unavailable.",
+            tags: formatTags(data.tags, [platform.name.toLowerCase(), "public media"]),
+            subscribersOrFollowers: formatCount(data.channel_follower_count),
+            sourcePageUrl: typeof data.webpage_url === "string" ? data.webpage_url : parsed.toString(),
             sourceUrl: parsed.toString(),
             downloadSupported: true,
             extractor: "yt-dlp",
@@ -261,6 +290,11 @@ async function startServer() {
             title: `${platform.name} link`,
             author: "Public creator",
             thumbnail: "",
+            views: "Public data unavailable",
+            likes: "Public data unavailable",
+            uploadedDate: "Public date unavailable",
+            description: "The platform did not return public metadata for this link.",
+            tags: [platform.name.toLowerCase(), "public media"],
             sourceUrl: parsed.toString(),
             downloadSupported: false,
             downloadMessage: "This platform did not expose a downloadable public stream. Use the platform's own download controls or provide a direct public media URL.",
@@ -275,6 +309,11 @@ async function startServer() {
           title: titleFromUrl(parsed),
           author: "Public source",
           thumbnail: "",
+          views: "Direct media file",
+          likes: "Not applicable",
+          uploadedDate: "Source date unavailable",
+          description: "A direct public media file was detected.",
+          tags: ["direct media", "public source"],
           sourceUrl: parsed.toString(),
           downloadSupported: true,
           directMedia: true,
@@ -319,6 +358,8 @@ async function startServer() {
           `${MAX_DOWNLOAD_BYTES}`,
           "--format",
           extractorFormat(quality, format),
+          "--merge-output-format",
+          "mp4",
           "--output",
           "-",
         ];
