@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowDown, 
   Clock, 
-  Pause, 
-  Play, 
   CheckCircle2, 
   FolderDown, 
   RotateCcw,
@@ -35,14 +33,15 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
   onViewDownloads,
   isUrdu = false
 }) => {
-  const [progress, setProgress] = useState(15);
-  const [isPaused, setIsPaused] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [speedMBps, setSpeedMBps] = useState(4.8);
   const [secondsRemaining, setSecondsRemaining] = useState(24);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string>('');
+  const [downloadError, setDownloadError] = useState<string>('');
+  const hasStartedRef = useRef(false);
 
   const totalMB = option.sizeMB;
   const downloadedMB = (progress / 100) * totalMB;
@@ -52,94 +51,6 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
     { id: 'dl-2', timestamp: '10:25:16', text: 'Connecting to direct edge media server...', type: 'info' },
     { id: 'dl-3', timestamp: '10:25:18', text: `Preparing ${option.label} (${option.resolution || option.format}) from the public source...`, type: 'matrix' },
   ]);
-
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const progressRef = useRef(15);
-  const hasFinishedRef = useRef(false);
-
-  // Download simulation loop
-  useEffect(() => {
-    if (isCompleted || isPaused) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      return;
-    }
-
-    if (hasFinishedRef.current) {
-      return;
-    }
-
-    intervalRef.current = setInterval(() => {
-      if (hasFinishedRef.current) {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        return;
-      }
-
-      const current = progressRef.current;
-      if (current >= 100) {
-        hasFinishedRef.current = true;
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        handleDownloadFinished();
-        return;
-      }
-
-      // Variable speed between 3.8 and 7.4 MB/s
-      const randomSpeed = Number((4.2 + (Math.random() * 2.6 - 0.8)).toFixed(1));
-      setSpeedMBps(randomSpeed);
-
-      const increment = Math.random() * 4 + 2.5;
-      const next = Math.min(100, current + increment);
-      progressRef.current = next;
-
-      // Update progress state
-      setProgress(next);
-
-      // Approximate seconds remaining
-      const remainingMB = ((100 - next) / 100) * totalMB;
-      const secs = Math.max(1, Math.round(remainingMB / randomSpeed));
-      setSecondsRemaining(secs);
-
-      // Periodic terminal updates while actively streaming
-      if (Math.random() > 0.65 && next < 100) {
-        const nowStr = new Date().toTimeString().split(' ')[0];
-        cyberAudio.playPacketPing();
-        const uniqueLogId = `log-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        setLogs((prevLogs) => [
-          ...prevLogs.slice(-6),
-          {
-            id: uniqueLogId,
-            timestamp: nowStr,
-            text: `Chunk verified: ${((next / 100) * totalMB).toFixed(1)} MB / ${totalMB.toFixed(1)} MB (${Math.round(next)}%)`,
-            type: 'info'
-          }
-        ]);
-      }
-
-      if (next >= 100) {
-        hasFinishedRef.current = true;
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        handleDownloadFinished();
-      }
-    }, 450);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isPaused, isCompleted, totalMB]);
 
   const handleDownloadFinished = () => {
     setIsCompleted(true);
@@ -151,7 +62,7 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
       {
         id: uniqueDoneId,
         timestamp: nowStr,
-        text: 'Download complete. Clean stream assembly verified [100% OK].',
+        text: 'Download complete. The public media file was saved [100% OK].',
         type: 'success'
       }
     ]);
@@ -170,16 +81,15 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
     onFinish(historyItem);
   };
 
-  const handleTogglePause = () => {
-    cyberAudio.playClick();
-    setIsPaused(!isPaused);
-  };
-
-  // Real file download trigger - saves directly to computer or mobile device
+  // Start the real file transfer and report bytes received to the cyber progress UI.
   const handleSaveToDisk = async () => {
     if (isSaving) return;
     cyberAudio.playClick();
     setIsSaving(true);
+    setIsCompleted(false);
+    setSaveSuccess(false);
+    setDownloadError('');
+    setProgress(0);
     setSaveMessage(isUrdu ? 'ڈاؤنلوڈ شروع ہو رہا ہے...' : 'Starting download...');
 
     try {
@@ -189,7 +99,7 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
         {
           id: `save-${Date.now()}`,
           timestamp: nowStr,
-          text: `Writing clean media binary payload to OS storage: ${fileName}...`,
+          text: `Requesting real media bytes from the public source: ${fileName}...`,
           type: 'info'
         }
       ]);
@@ -197,8 +107,9 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
       const result = await downloadFileToDevice(
         option.downloadUrl || option.sampleMediaUrl,
         fileName,
-        (statusText) => {
+        (statusText, percentage) => {
           setSaveMessage(statusText);
+          if (percentage !== undefined) setProgress(percentage);
         },
         { quality: option.resolution, format: option.format }
       );
@@ -206,11 +117,8 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
       if (result.success) {
         cyberAudio.playSuccess();
         setSaveSuccess(true);
-        setSaveMessage(
-          isUrdu 
-            ? 'فائل کامیابی سے ڈاؤنلوڈز فولڈر میں محفوظ ہو گئی!' 
-            : 'File successfully saved in Downloads folder!'
-        );
+        setProgress(100);
+        setSaveMessage(isUrdu ? 'فائل ڈاؤنلوڈز فولڈر میں محفوظ ہو گئی!' : result.message);
         const doneStr = new Date().toTimeString().split(' ')[0];
         setLogs((prev) => [
           ...prev,
@@ -222,15 +130,23 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
           }
         ]);
       } else {
-        setSaveMessage(isUrdu ? 'ڈاؤنلوڈ مکمل ہوا' : 'Download completed');
+        setDownloadError(result.message);
+        setSaveMessage(result.message);
       }
     } catch (err: any) {
       console.error('Save to disk error:', err);
-      setSaveMessage(isUrdu ? 'براہ راست ڈاؤنلوڈ ونڈو کھولی گئی' : 'Direct download initiated');
+      setDownloadError(err?.message || 'Download failed.');
+      setSaveMessage(isUrdu ? 'ڈاؤنلوڈ ناکام ہو گیا' : (err?.message || 'Download failed.'));
     } finally {
       setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+    void handleSaveToDisk();
+  }, []);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -297,8 +213,8 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
 
       {/* Oscilloscope Waveform matching screenshot */}
       <OscilloscopeWave
-        speedMBps={isCompleted || isPaused ? 0 : speedMBps}
-        active={!isCompleted && !isPaused}
+        speedMBps={isCompleted || !isSaving ? 0 : speedMBps}
+        active={!isCompleted && isSaving}
       />
 
       {/* Terminal Log Box matching screenshot */}
@@ -310,6 +226,11 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
 
       {/* Bottom Action Controls */}
       <div className="space-y-2 pt-1">
+        {downloadError && !isCompleted && (
+          <div className="p-2.5 rounded-xl border border-rose-400/40 bg-rose-400/10 text-xs text-rose-200">
+            {downloadError}
+          </div>
+        )}
         {isCompleted ? (
           <div className="space-y-2.5">
             {saveMessage && (
@@ -366,18 +287,19 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
           </div>
         ) : (
           <button
-            onClick={handleTogglePause}
-            className="w-full py-3.5 rounded-xl font-display font-bold text-sm tracking-wider uppercase flex items-center justify-center gap-2 bg-[#05222b] hover:bg-[#08303d] border border-[#00ffd5]/40 text-[#00ffd5] hover:border-[#00ffd5] transition-all cursor-pointer"
+            onClick={handleSaveToDisk}
+            disabled={isSaving}
+            className="w-full py-3.5 rounded-xl font-display font-bold text-sm tracking-wider uppercase flex items-center justify-center gap-2 bg-[#05222b] hover:bg-[#08303d] border border-[#00ffd5]/40 text-[#00ffd5] hover:border-[#00ffd5] transition-all cursor-pointer disabled:cursor-wait"
           >
-            {isPaused ? (
+            {isSaving ? (
               <>
-                <Play size={16} className="fill-[#00ffd5]" />
-                <span>{isUrdu ? 'جاری رکھیں' : 'RESUME DOWNLOAD'}</span>
+                <Loader2 size={16} className="animate-spin" />
+                <span>{isUrdu ? 'ڈاؤنلوڈ جاری ہے...' : 'DOWNLOADING REAL MEDIA...'}</span>
               </>
             ) : (
               <>
-                <Pause size={16} />
-                <span>{isUrdu ? 'روکیں' : 'PAUSE'}</span>
+                <RotateCcw size={16} />
+                <span>{isUrdu ? 'دوبارہ کوشش کریں' : 'RETRY DOWNLOAD'}</span>
               </>
             )}
           </button>
