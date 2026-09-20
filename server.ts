@@ -540,6 +540,23 @@ async function startServer() {
 
   app.use(express.json());
 
+  const legacyRedirects: Record<string, string> = {
+    "/facebook-downloader": "/facebook-video-downloader/",
+    "/tiktok-no-watermark": "/tiktok-video-downloader/",
+    "/blog/extract-audio-from-tiktok-instagram-mp3": "/video-to-mp3/",
+  };
+
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/api/")) return next();
+
+    const legacyPath = legacyRedirects[req.path];
+    const isApexHost = req.hostname.toLowerCase() === "rapid-video-downloader.online";
+    if (!legacyPath && !isApexHost) return next();
+
+    const destinationPath = legacyPath || req.originalUrl;
+    return res.redirect(301, `https://www.rapid-video-downloader.online${destinationPath}`);
+  });
+
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", extractor: process.env.YTDLP_BIN || "python3 -m yt_dlp", timestamp: new Date().toISOString() });
   });
