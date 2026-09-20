@@ -33,6 +33,7 @@ export const DownloadsHistoryScreen: React.FC<DownloadsHistoryScreenProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const completedItems = history.filter(item => item.status === 'completed');
   const inProgressItems = history.filter(item => item.status === 'in_progress');
@@ -47,13 +48,28 @@ export const DownloadsHistoryScreen: React.FC<DownloadsHistoryScreenProps> = ({
   const handleDownloadFile = async (item: DownloadHistoryItem) => {
     cyberAudio.playClick();
     setDownloadingId(item.id);
+    setDownloadError(null);
     try {
-      const res = await downloadFileToDevice(item.mediaUrl, item.fileName);
+      const res = await downloadFileToDevice(
+        item.mediaUrl,
+        item.fileName,
+        undefined,
+        {
+          quality: item.selectedOption.resolution,
+          format: item.selectedOption.format,
+          estimatedSizeMB: item.sizeMB,
+          backgroundJob: item.video.platform !== 'other',
+        },
+      );
       if (res.success) {
         cyberAudio.playSuccess();
         setSavedId(item.id);
         setTimeout(() => setSavedId(null), 3000);
+      } else {
+        setDownloadError(res.message);
       }
+    } catch (error) {
+      setDownloadError(error instanceof Error ? error.message : 'Download failed.');
     } finally {
       setDownloadingId(null);
     }
@@ -96,6 +112,12 @@ export const DownloadsHistoryScreen: React.FC<DownloadsHistoryScreenProps> = ({
           </button>
         )}
       </div>
+
+      {downloadError && (
+        <div className="p-3 rounded-xl border border-rose-400/40 bg-rose-400/10 text-xs text-rose-200">
+          {downloadError}
+        </div>
+      )}
 
       {/* Tabs: Completed & In Progress matching screenshot */}
       <div className="grid grid-cols-2 p-1 bg-[#041217] rounded-xl border border-[#00ffd5]/20 text-xs">
