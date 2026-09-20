@@ -61,7 +61,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({
         <p className="text-xs text-[#a3e5dc] mt-1 leading-relaxed">
           {isUrdu 
             ? 'اعلیٰ کارکردگی، تیز رفتار، اور مکمل طور پر مفت ویڈیو ڈاؤنلوڈ پلیٹ فارم۔'
-            : 'Next-generation high-speed video extractor with zero watermarks and encrypted stream processing.'}
+             : 'A free public-media resolver with direct streaming and clear platform availability checks.'}
         </p>
 
         <div className="flex items-center gap-2 mt-3 pt-2 border-t border-[#00ffd5]/15 text-[11px] font-mono-cyber text-[#00ffd5]/70">
@@ -106,7 +106,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({
             <p className="text-xs text-[#98ded4] leading-relaxed">
               {isUrdu 
                 ? 'ریپڈ ویڈیو ڈاؤنلوڈر ایک جدید اور طاقتور ویب ٹول ہے جو سوشل میڈیا لنکس (ٹک ٹاک، یوٹیوب، انسٹاگرام، فیس بک وغیرہ) سے فوری طور پر اصل ویڈیو اسٹریم حاصل کرتا ہے۔ یہ ویڈیو کے اندرونی واٹر مارکس کو ختم کر کے ہائی ڈیفینیشن (1080p اور 4K) میں ڈاؤنلوڈ فراہم کرتا ہے۔'
-                : 'Rapid Video Downloader is an ultra-fast web utility engineered to decode and extract pure media streams directly from CDN servers across TikTok, YouTube, Instagram, Facebook, and Twitter. It removes branded watermarks and provides direct file delivery in MP4 and MP3 formats.'}
+                 : 'Rapid Video Downloader resolves metadata and streams public or authorized media when a platform exposes a downloadable source. It does not bypass private access, DRM, or watermarks.'}
             </p>
           </div>
 
@@ -114,8 +114,8 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({
           <div className="grid grid-cols-2 gap-2.5">
             {[
               {
-                title: isUrdu ? 'بغیر واٹر مارک' : 'No Watermarks',
-                desc: isUrdu ? 'ٹک ٹاک و انسٹاگرام لوگو مکمل غائب' : 'Clean original video without badges'
+                 title: isUrdu ? 'عوامی میڈیا' : 'Public Media',
+                 desc: isUrdu ? 'صرف عوامی یا مجاز مواد' : 'Public or authorized sources only'
               },
               {
                 title: isUrdu ? 'تیز رفتار اسٹریمنگ' : 'Multi-Threaded',
