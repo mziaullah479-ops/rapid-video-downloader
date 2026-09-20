@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#030d12" />
     <meta name="application-name" content="Rapid Video Downloader" />
     <meta name="author" content="Rapid Video Downloader" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <link rel="canonical" href="https://www.rapid-video-downloader.online/" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta property="og:title" content="Rapid Video Downloader | Free MP4 &amp; MP3 Downloader" />
@@ -16,6 +17,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.rapid-video-downloader.online/" />
     <meta property="og:site_name" content="Rapid Video Downloader" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:image" content="https://www.rapid-video-downloader.online/og-image.svg" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Rapid Video Downloader | Free MP4 &amp; MP3 Downloader" />
@@ -24,13 +26,84 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "Rapid Video Downloader",
-        "url": "https://www.rapid-video-downloader.online/",
-        "description": "Download public or authorized videos as MP4 or MP3 when the source exposes a downloadable stream.",
-        "applicationCategory": "UtilitiesApplication",
-        "operatingSystem": "Any",
-        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://www.rapid-video-downloader.online/#website",
+            "url": "https://www.rapid-video-downloader.online/",
+            "name": "Rapid Video Downloader",
+            "description": "A browser-based tool for inspecting and saving public or authorized media streams.",
+            "inLanguage": "en",
+            "publisher": { "@id": "https://www.rapid-video-downloader.online/#organization" }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://www.rapid-video-downloader.online/#organization",
+            "name": "Rapid Video Downloader",
+            "url": "https://www.rapid-video-downloader.online/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://www.rapid-video-downloader.online/favicon.svg"
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://www.rapid-video-downloader.online/#application",
+            "name": "Rapid Video Downloader",
+            "url": "https://www.rapid-video-downloader.online/",
+            "description": "Download public or authorized videos as MP4 or MP3 when the source exposes a downloadable stream.",
+            "applicationCategory": "UtilitiesApplication",
+            "operatingSystem": "Any",
+            "browserRequirements": "Requires a modern web browser with JavaScript enabled",
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "featureList": [
+              "Public media metadata inspection",
+              "MP4 and MP3 options when provided by the source",
+              "Browser-based file saving",
+              "TikTok, YouTube, Instagram, Facebook and other public platforms"
+            ],
+            "publisher": { "@id": "https://www.rapid-video-downloader.online/#organization" }
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://www.rapid-video-downloader.online/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Is Rapid Video Downloader free to use?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. The web app is free to use and does not require an account. Availability can depend on the source and free server limits."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can it download every social media link?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. A download works only when the platform exposes a public stream and the user is authorized to save it. Private, DRM-protected, paywalled and login-required media is not supported."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I save audio as MP3?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "An audio option may be available when the public source provides audio extraction. The available format depends on the source and server limits."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Where are downloaded files saved?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "After saving, the browser sends the file to the device's normal Downloads location, subject to the browser's download settings."
+                }
+              }
+            ]
+          }
+        ]
       }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,6 +112,25 @@
   </head>
   <body class="bg-[#030d12] text-[#e0f7f6] antialiased selection:bg-[#00ffd5]/20 selection:text-[#00ffd5]">
     <div id="root"></div>
+    <noscript>
+      <main>
+        <h1>Rapid Video Downloader for Public and Authorized Media</h1>
+        <p>Inspect public video metadata and save authorized MP4 or MP3 media when the source exposes a downloadable stream.</p>
+        <h2>How it works</h2>
+        <ol>
+          <li>Paste a public or authorized video URL.</li>
+          <li>Review the title, creator, duration, stats and available formats.</li>
+          <li>Save the available media file to your device.</li>
+        </ol>
+        <h2>Important limits</h2>
+        <p>Private, login-required, DRM-protected and paywalled content is not supported. Availability depends on the source's public stream and server limits.</p>
+        <h2>Common questions</h2>
+        <h3>Is it free?</h3>
+        <p>Yes. No account is required, but source and server limits still apply.</p>
+        <h3>Does it support MP3?</h3>
+        <p>An audio option is shown when the public source provides audio extraction.</p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
