@@ -32,6 +32,8 @@ export interface DownloadOption {
   bitrate?: string;
   fps?: number;
   sampleMediaUrl: string;
+  downloadUrl?: string;
+  downloadQuality?: string;
 }
 
 export interface VideoMetadata {
@@ -54,6 +56,8 @@ export interface VideoMetadata {
   thumbnail: string;
   previewVideoUrl: string;
   youtubeVideoId?: string;
+  downloadSupported?: boolean;
+  downloadMessage?: string;
   options: DownloadOption[];
 }
 
