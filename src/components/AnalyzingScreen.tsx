@@ -36,13 +36,13 @@ export const AnalyzingScreen: React.FC<AnalyzingScreenProps> = ({
     { id: '1', label: 'URL Detected', urduLabel: 'یو آر ایل کی تصدیق', status: 'completed', timeTaken: '0.8s' },
     { id: '2', label: `Platform Identified (${metadata.platformName})`, urduLabel: `پلیٹ فارم شناخت شدہ (${metadata.platformName})`, status: 'active', timeTaken: '1.2s' },
     { id: '3', label: 'Fetching Video Data...', urduLabel: 'ویڈیو ڈیٹا برآمد ہو رہا ہے...', status: 'pending' },
-    { id: '4', label: 'Stripping Watermarks & DRM Tokens', urduLabel: 'واٹر مارک اور نشانات کا خاتمہ', status: 'pending' },
+    { id: '4', label: 'Checking public download availability', urduLabel: 'عوامی ڈاؤنلوڈ کی دستیابی چیک ہو رہی ہے', status: 'pending' },
     { id: '5', label: 'Extracting Direct Media Streams', urduLabel: 'براہ راست میڈیا اسٹریمز الگ کرنا', status: 'pending' },
     { id: '6', label: 'Preparing Download Options', urduLabel: 'ڈاؤنلوڈ آپشنز تیار کیے جا رہے ہیں', status: 'pending' },
   ]);
 
   const [logs, setLogs] = useState<TerminalLogType[]>([
-    { id: 'l1', timestamp: '10:24:17', text: 'Initializing neural decryption kernel...', type: 'cyan' },
+    { id: 'l1', timestamp: '10:24:17', text: 'Initializing public media resolver...', type: 'cyan' },
     { id: 'l2', timestamp: '10:24:18', text: `URL received: ${url.length > 38 ? url.slice(0, 38) + '...' : url}`, type: 'info' },
     { id: 'l3', timestamp: '10:24:18', text: `Platform: ${metadata.platformName} (${metadata.platform.toUpperCase()}_CDN)`, type: 'matrix' },
   ]);
@@ -68,7 +68,7 @@ export const AnalyzingScreen: React.FC<AnalyzingScreenProps> = ({
       ]);
     }, 700));
 
-    // Step 3 finish -> Step 4 (Watermark bypass)
+    // Step 3 finish -> Step 4 (public availability check)
     timers.push(setTimeout(() => {
       setProgress(58);
       cyberAudio.playKey();
@@ -80,7 +80,7 @@ export const AnalyzingScreen: React.FC<AnalyzingScreenProps> = ({
       setLogs(prev => [
         ...prev,
         { id: `l-${Date.now()}-2`, timestamp: '10:24:20', text: 'Analyzing video bitrate & stream packets...', type: 'info' },
-        { id: `l-${Date.now()}-3`, timestamp: '10:24:21', text: 'Bypassing overlay layer: Watermark removed [CLEAN]', type: 'success' }
+        { id: `l-${Date.now()}-3`, timestamp: '10:24:21', text: metadata.downloadSupported === false ? 'No public download stream exposed by the source.' : 'Public download stream is available.', type: metadata.downloadSupported === false ? 'warn' : 'success' }
       ]);
     }, 1500));
 
