@@ -1,0 +1,17 @@
+{
+  "name": "Rapid Video Downloader",
+  "short_name": "Rapid Downloader",
+  "description": "Inspect public or authorized media links and save available MP4 or MP3 formats.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#030d12",
+  "theme_color": "#030d12",
+  "lang": "en",
+  "categories": ["utilities", "video", "music"],
+  "icons": [
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
