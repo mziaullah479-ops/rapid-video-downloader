@@ -200,8 +200,8 @@ export const PreviewScreen: React.FC<PreviewScreenProps> = ({
         {metadata.downloadSupported === false && (
           <div className="p-3 rounded-xl border border-amber-400/40 bg-amber-400/10 text-xs text-amber-200">
             {metadata.downloadMessage || (isUrdu
-              ? 'اس لنک کے لیے عوامی download stream دستیاب نہیں۔'
-              : 'This link does not expose a public download stream. Try a direct public media URL or the platform download controls.')}
+              ? 'اس لنک کی download stream ابھی confirm نہیں ہوئی، پھر بھی کوشش کی جا سکتی ہے۔'
+              : 'The source did not confirm a downloadable stream yet. You can still try the download.')}
           </div>
         )}
         <button
@@ -209,8 +209,7 @@ export const PreviewScreen: React.FC<PreviewScreenProps> = ({
             cyberAudio.playClick();
             onProceedToDownload();
           }}
-          disabled={metadata.downloadSupported === false}
-          className="w-full py-3.5 rounded-xl font-display font-bold text-base tracking-wider uppercase flex items-center justify-center gap-2 bg-gradient-to-r from-[#00ffd5] to-[#00c9a7] text-[#031317] hover:shadow-[0_0_20px_rgba(0,255,213,0.5)] transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-3.5 rounded-xl font-display font-bold text-base tracking-wider uppercase flex items-center justify-center gap-2 bg-gradient-to-r from-[#00ffd5] to-[#00c9a7] text-[#031317] hover:shadow-[0_0_20px_rgba(0,255,213,0.5)] transition-all cursor-pointer"
         >
           <Download size={18} className="stroke-[2.5]" />
           <span>{isUrdu ? 'ڈاؤنلوڈ کوالٹی منتخب کریں' : 'SELECT DOWNLOAD QUALITY'}</span>
