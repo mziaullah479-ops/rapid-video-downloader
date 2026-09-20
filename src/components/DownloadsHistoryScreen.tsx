@@ -58,7 +58,8 @@ export const DownloadsHistoryScreen: React.FC<DownloadsHistoryScreenProps> = ({
           quality: item.selectedOption.resolution,
           format: item.selectedOption.format,
           estimatedSizeMB: item.sizeMB,
-          backgroundJob: item.video.platform !== 'other' && item.video.platform !== 'tiktok',
+          backgroundJob: item.video.platform !== 'other'
+            && (item.video.platform !== 'tiktok' || item.selectedOption.format.toLowerCase() === 'mp3'),
         },
       );
       if (res.success) {
