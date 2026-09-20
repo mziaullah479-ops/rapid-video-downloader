@@ -62,7 +62,7 @@ export const DownloadingScreen: React.FC<DownloadingScreenProps> = ({
       {
         id: uniqueDoneId,
         timestamp: nowStr,
-        text: 'Download complete. The public media file was saved [100% OK].',
+         text: 'Download complete. The media file was saved [100% OK].',
         type: 'success'
       }
     ]);
