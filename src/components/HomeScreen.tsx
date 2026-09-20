@@ -76,7 +76,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </p>
         <p className="text-xs text-[#00ffd5]/65 flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-[#00ffd5] animate-pulse" />
-          <span>PUBLIC MEDIA RESOLVER // QUALITY-AWARE STREAMS</span>
+           <span>MEDIA RESOLVER // QUALITY-AWARE STREAMS</span>
         </p>
       </div>
 
