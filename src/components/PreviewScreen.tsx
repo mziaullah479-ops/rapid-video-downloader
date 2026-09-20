@@ -10,7 +10,8 @@ import {
   ChevronUp,
   Download,
   Share2,
-  Check
+  Check,
+  Heart
 } from 'lucide-react';
 import { VideoMetadata } from '../types';
 import { cyberAudio } from '../utils/audio';
@@ -27,11 +28,13 @@ export const PreviewScreen: React.FC<PreviewScreenProps> = ({
   isUrdu = false
 }) => {
   const downloadAvailable = metadata.downloadSupported !== false;
+  const previewAvailable = Boolean(metadata.youtubeVideoId || metadata.previewVideoUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
   const handleTogglePlay = () => {
+    if (!previewAvailable) return;
     cyberAudio.playClick();
     setIsPlaying(!isPlaying);
   };
@@ -76,12 +79,20 @@ export const PreviewScreen: React.FC<PreviewScreenProps> = ({
             />
             {/* Play Button Overlay matching screenshot */}
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <button
+               <button
                 onClick={handleTogglePlay}
-                className="w-14 h-14 rounded-full bg-[#00ffd5] text-[#030d12] flex items-center justify-center shadow-[0_0_20px_#00ffd5] hover:scale-110 active:scale-95 transition-all cursor-pointer"
-                title="Play preview"
+                disabled={!previewAvailable}
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${previewAvailable
+                  ? 'bg-[#00ffd5] text-[#030d12] shadow-[0_0_20px_#00ffd5] hover:scale-110 active:scale-95 cursor-pointer'
+                  : 'bg-[#12333b] text-[#6b9b9a] cursor-not-allowed'
+                }`}
+                title={previewAvailable ? 'Play preview' : 'Preview unavailable'}
               >
-                <Play size={26} className="fill-[#030d12] ml-1" />
+                {previewAvailable ? (
+                  <Play size={26} className="fill-[#030d12] ml-1" />
+                ) : (
+                  <span className="text-[10px] font-mono-cyber text-center leading-tight">N/A</span>
+                )}
               </button>
             </div>
 
@@ -137,7 +148,7 @@ export const PreviewScreen: React.FC<PreviewScreenProps> = ({
       </div>
 
       {/* Stats Cards Row matching screenshot */}
-      <div className="grid grid-cols-2 gap-2 font-mono-cyber">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 font-mono-cyber">
         <div className="flex items-center gap-2.5 p-2.5 bg-[#04151b] border border-[#00ffd5]/20 rounded-xl">
           <div className="p-2 rounded-lg bg-[#00ffd5]/10 text-[#00ffd5]">
             <Eye size={16} />
@@ -155,6 +166,16 @@ export const PreviewScreen: React.FC<PreviewScreenProps> = ({
           <div className="min-w-0">
             <p className="text-xs font-bold text-white truncate">{metadata.uploadedDate}</p>
             <p className="text-[10px] text-[#00ffd5]/60">{isUrdu ? 'تاریخ اپلوڈ' : 'uploaded'}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 p-2.5 bg-[#04151b] border border-[#00ffd5]/20 rounded-xl">
+          <div className="p-2 rounded-lg bg-[#00ffd5]/10 text-[#00ffd5]">
+            <Heart size={16} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-white truncate">{metadata.likes}</p>
+            <p className="text-[10px] text-[#00ffd5]/60">{isUrdu ? 'پسند' : 'likes'}</p>
           </div>
         </div>
       </div>
