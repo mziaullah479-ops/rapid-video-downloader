@@ -19,7 +19,7 @@ import { DownloadingScreen } from './components/downloadingscreen';
 import { DownloadsHistoryScreen } from './components/DownloadsHistoryScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { CyberBackground } from './components/CyberBackground';
-import { AdminScreen } from './components/AdminScreen';
+import { AdminScreen } from './components/adminscreen';
 import { initAnalytics, trackEvent } from './utils/analytics';
 import { Smartphone, Monitor } from 'lucide-react';
 
