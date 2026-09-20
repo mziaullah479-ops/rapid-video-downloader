@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#030d12"/>
+  <path d="M0 510h1200M0 120h1200" stroke="#00ffd5" stroke-opacity=".16" stroke-width="2"/>
+  <circle cx="1050" cy="120" r="190" fill="#00ffd5" fill-opacity=".07"/>
+  <path d="M600 100v250m0 0 80-80m-80 80-80-80M465 405h270" fill="none" stroke="#00ffd5" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="600" y="500" text-anchor="middle" fill="#e0f7f6" font-family="Arial, sans-serif" font-size="54" font-weight="700">RAPID VIDEO DOWNLOADER</text>
+  <text x="600" y="555" text-anchor="middle" fill="#00ffd5" font-family="monospace" font-size="22">FREE MP4 / MP3 • QUALITY-AWARE STREAMS</text>
+</svg>

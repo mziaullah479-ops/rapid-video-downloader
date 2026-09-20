@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://rapid-video-downloader-1mvu.onrender.com/sitemap.xml
