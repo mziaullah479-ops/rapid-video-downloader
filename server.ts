@@ -1,4 +1,4 @@
-import express from "express";
+iasync function startTikTokAudioJobmport express from "express";
 import fs from "node:fs";
 import { promises as fsPromises } from "node:fs";
 import crypto from "node:crypto";
@@ -764,7 +764,7 @@ async function startServer() {
       if (format === "mp3" && platformForUrl(parsed).id === "tiktok") {
         const publicFallback = await resolveTikTokPublicMedia(parsed);
         if (publicFallback?.downloadUrl) {
-          const job = startTikTokAudioJob(new URL(publicFallback.downloadUrl), fileName);
+          const job = await startTikTokAudioJob(new URL(publicFallback.downloadUrl), fileName);
           return res.status(202).json({ jobId: job.id, status: job.status });
         }
       }
