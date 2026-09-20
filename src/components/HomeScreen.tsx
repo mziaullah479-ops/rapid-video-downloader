@@ -56,6 +56,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [isSavingToDevice, setIsSavingToDevice] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [saveFeedback, setSaveFeedback] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const previewRef = useRef<HTMLDivElement>(null);
   const downloadRef = useRef<HTMLDivElement>(null);
@@ -88,6 +89,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setIsAnalyzing(true);
     setVideoData(null);
     setIsDownloading(false);
+    setErrorMessage('');
     setDownloadProgress(0);
     setIsCompleted(false);
     setSaveSuccess(false);
@@ -106,18 +108,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       }, 150);
     } catch (err) {
       console.error('Failed to resolve video:', err);
-      // Fallback to sample
-      setVideoData(SAMPLE_VIDEOS.mrbeast);
-      setSelectedOption(SAMPLE_VIDEOS.mrbeast.options[0]);
-      cyberAudio.playSuccess();
+      setErrorMessage(err instanceof Error ? err.message : (isUrdu ? 'یہ لنک حل نہیں ہو سکا۔' : 'This link could not be resolved.'));
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  // Start download simulation & direct saving pipeline
+  // Prepare the real download request. The browser starts the file transfer after Save.
   const handleStartDownload = () => {
     if (!videoData || !selectedOption) return;
+    if (videoData.downloadSupported === false) {
+      setStatusText(videoData.downloadMessage || (isUrdu ? 'اس لنک کے لیے عوامی ڈاؤنلوڈ دستیاب نہیں۔' : 'A public download is not available for this link.'));
+      return;
+    }
     cyberAudio.playClick();
     setIsDownloading(true);
     setDownloadProgress(5);
@@ -125,7 +128,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setIsPaused(false);
     setSaveSuccess(false);
     setSaveFeedback('');
-    setStatusText(isUrdu ? 'اسٹریم ڈکرپٹ کی جا رہی ہے...' : 'Decrypting clean video stream...');
+    setStatusText(isUrdu ? 'عوامی میڈیا اسٹریم تیار کی جا رہی ہے...' : 'Preparing the public media stream...');
 
     setTimeout(() => {
       downloadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -142,7 +145,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           clearInterval(interval);
           setIsCompleted(true);
           cyberAudio.playSuccess();
-          setStatusText(isUrdu ? 'ڈاؤنلوڈ تیار ہے! ڈیوائس پر محفوظ کریں۔' : 'Ready! Click Save to Device.');
+          setStatusText(isUrdu ? 'تیار ہے! ڈیوائس پر محفوظ کریں۔' : 'Ready. Click Save to Device.');
           return 100;
         }
 
@@ -150,9 +153,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         const next = Math.min(100, prev + delta);
 
         if (next > 25 && next < 55) {
-          setStatusText(isUrdu ? 'واٹر مارک ہٹا دیا گیا، فائل پیکیجنگ جاری ہے...' : 'Watermark stripped. Packing MP4 stream...');
+          setStatusText(isUrdu ? 'فائل پیکیجنگ جاری ہے...' : 'Packing the media stream...');
         } else if (next >= 55 && next < 90) {
-          setStatusText(isUrdu ? 'اصل ہائی کوالٹی بٹس رائٹ ہو رہے ہیں...' : 'Streaming multi-threaded media packets...');
+          setStatusText(isUrdu ? 'اصل میڈیا بٹس تیار ہو رہے ہیں...' : 'Preparing the original media bytes...');
         } else if (next >= 90) {
           setStatusText(isUrdu ? 'فائل تیار ہو رہی ہے...' : 'Finalizing media container...');
         }
@@ -182,21 +185,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
     try {
       const res = await downloadFileToDevice(
-        selectedOption.sampleMediaUrl,
+        selectedOption.downloadUrl || selectedOption.sampleMediaUrl,
         safeTitle,
-        (msg) => setSaveFeedback(msg)
+        (msg) => setSaveFeedback(msg),
+        {
+          quality: selectedOption.resolution,
+          format: selectedOption.format,
+        }
       );
 
       if (res.success) {
         cyberAudio.playSuccess();
         setSaveSuccess(true);
-        setSaveFeedback(
-          isUrdu 
-            ? 'فائل کامیابی سے ڈاؤنلوڈز فولڈر میں محفوظ ہو گئی!' 
-            : 'File successfully saved to your Downloads folder!'
-        );
+        setSaveFeedback(isUrdu ? 'ڈاؤنلوڈ شروع ہو گیا ہے۔' : res.message);
       } else {
-        setSaveFeedback(isUrdu ? 'براہِ راست ونڈو کھولی گئی' : 'Download stream initiated');
+        setSaveFeedback(res.message);
       }
     } catch (err) {
       console.error('Device save error:', err);
@@ -235,9 +238,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             ? 'ایک یو آر ایل۔ تمام پلیٹ فارمز۔ بغیر واٹر مارک ڈاؤنلوڈ انجن۔'
             : 'One URL. Multiple Platforms. Instant Direct Download.'}
         </p>
-        <p className="text-xs font-mono-cyber text-[#00ffd5]/60 flex items-center gap-1.5">
+       <p className="text-xs font-mono-cyber text-[#00ffd5]/60 flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-[#00ffd5] animate-pulse" />
-          <span>CYBER CORE BYPASS // NO WATERMARKS // 1080P & MP3</span>
+           <span>PUBLIC MEDIA MODE // NO DRM BYPASS // 1080P & MP3</span>
         </p>
       </div>
 
@@ -368,6 +371,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </button>
       </div>
 
+      {errorMessage && (
+        <div className="p-3 rounded-xl border border-rose-400/40 bg-rose-400/10 text-xs text-rose-200 flex items-start gap-2">
+          <AlertCircle size={15} className="shrink-0 mt-0.5" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
       {/* 4. INLINE VIDEO PREVIEW & QUALITY SELECTION */}
       {videoData && (
         <div 
@@ -378,7 +388,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <div className="flex items-center justify-between pb-2 border-b border-[#00ffd5]/20">
             <span className="text-xs font-mono-cyber font-bold text-[#00ffd5] flex items-center gap-1.5">
               <ShieldCheck size={16} />
-              <span>{isUrdu ? 'ویڈیو تیار ہے (واٹر مارک ہٹا دیا گیا)' : 'STREAM READY // NO WATERMARK'}</span>
+               <span>{isUrdu ? 'عوامی میڈیا تیار ہے' : 'PUBLIC MEDIA READY'}</span>
             </span>
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#00ffd5]/15 border border-[#00ffd5]/30">
               <PlatformIcon platformId={videoData.platform} size={15} />
@@ -513,7 +523,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
 
           {/* Download Action Trigger */}
-          {!isDownloading && (
+           {videoData.downloadSupported === false && (
+             <div className="p-3 rounded-xl border border-amber-400/40 bg-amber-400/10 text-xs text-amber-200">
+               {videoData.downloadMessage || (isUrdu ? 'اس لنک کے لیے عوامی ڈاؤنلوڈ دستیاب نہیں۔' : 'A public download is not available for this link. Paste a direct public media URL instead.')}
+             </div>
+           )}
+
+           {videoData.downloadSupported !== false && !isDownloading && (
             <button
               onClick={handleStartDownload}
               className="w-full py-3.5 rounded-xl font-display font-bold text-base tracking-wider uppercase flex items-center justify-center gap-2 bg-gradient-to-r from-[#00ffd5] via-[#0df7cb] to-[#00d2aa] text-[#021318] hover:shadow-[0_0_25px_rgba(0,255,213,0.6)] cursor-pointer active:scale-[0.99] transition-all"
