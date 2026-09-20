@@ -444,12 +444,14 @@ function startExtractorJob(target: URL, fileName: string, quality: string, forma
     `${MAX_DOWNLOAD_BYTES}`,
     "--format",
     extractorFormat(quality, format),
-    "--merge-output-format",
-    "mp4",
     "--output",
     filePath,
   ];
-  if (format === "mp3") args.push("--extract-audio", "--audio-format", "mp3");
+  if (format === "mp3") {
+    args.push("--extract-audio", "--audio-format", "mp3");
+  } else {
+    args.splice(args.indexOf("--output"), 0, "--merge-output-format", "mp4");
+  }
   args.push(target.toString());
 
   const child = spawn(process.env.YTDLP_BIN || "python3", ["-m", "yt_dlp", ...args], {
@@ -739,10 +741,7 @@ async function startServer() {
 
       if (platformForUrl(parsed).id === "tiktok") {
         const publicFallback = await resolveTikTokPublicMedia(parsed);
-        if (publicFallback) {
-          if (format === "mp3") {
-            return res.status(400).json({ error: "The public TikTok embed exposes a video stream only. Choose MP4 for this link." });
-          }
+        if (publicFallback && format !== "mp3") {
           await pipeDirectMedia(new URL(publicFallback.downloadUrl), res, fileName);
           return;
         }
