@@ -5,8 +5,8 @@ import {
   DownloadOption, 
   DownloadHistoryItem 
 } from './types';
-import { SAMPLE_VIDEOS, resolveVideoForUrl } from './data/mockVideos';
-import { resolveVideoMetadataAsync } from './utils/videoResolver';
+import { SAMPLE_VIDEOS } from './data/mockVideos';
+import { detectPlatform, resolveVideoMetadataAsync } from './utils/videoResolver';
 import { cyberAudio } from './utils/audio';
 import { TopBar, BottomNav } from './components/Navbar';
 import { HomeScreen } from './components/HomeScreen';
@@ -21,104 +21,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { CyberBackground } from './components/CyberBackground';
 import { Smartphone, Monitor } from 'lucide-react';
 
-const INITIAL_HISTORY: DownloadHistoryItem[] = [
-  {
-    id: 'hist-1',
-    video: SAMPLE_VIDEOS.mrbeast,
-    selectedOption: SAMPLE_VIDEOS.mrbeast.options[0],
-    fileName: 'MrBeast - $1 vs $1,000,000 Private Island.mp4',
-    downloadedAt: 'Jun 7, 2024 • 10:26 AM',
-    sizeMB: 312.4,
-    status: 'completed',
-    mediaUrl: SAMPLE_VIDEOS.mrbeast.options[0].sampleMediaUrl
-  },
-  {
-    id: 'hist-2',
-    video: {
-      ...SAMPLE_VIDEOS.mrbeast,
-      id: 'vid-mrbeast-bunker',
-      title: 'I Survived 50 Hours In a Nuclear Bunker',
-      thumbnail: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=80',
-      views: '198,241,000',
-      uploadedDate: 'Jun 5, 2024',
-      durationFormatted: '18:40'
-    },
-    selectedOption: {
-      id: 'opt-bunker-1080p',
-      label: '1080p (Full HD)',
-      badge: 'HD',
-      format: 'MP4',
-      resolution: '1080p',
-      sizeMB: 289.7,
-      noWatermark: true,
-      qualityTag: 'Clean Stream',
-      sampleMediaUrl: SAMPLE_VIDEOS.mrbeast.options[0].sampleMediaUrl
-    },
-    fileName: 'MrBeast - I Survived 50 Hours In a Nuclear Bunker.mp4',
-    downloadedAt: 'Jun 5, 2024 • 6:12 PM',
-    sizeMB: 289.7,
-    status: 'completed',
-    mediaUrl: SAMPLE_VIDEOS.mrbeast.options[0].sampleMediaUrl
-  },
-  {
-    id: 'hist-3',
-    video: {
-      ...SAMPLE_VIDEOS.instagram_reel,
-      id: 'vid-nature-4k',
-      title: 'Beautiful Nature - 4K Video',
-      author: 'Relaxing Nature',
-      thumbnail: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&auto=format&fit=crop&q=80',
-      views: '42,100,000',
-      uploadedDate: 'May 28, 2024',
-      durationFormatted: '8:15'
-    },
-    selectedOption: {
-      id: 'opt-nature-4k',
-      label: '4K Ultra HD',
-      badge: '4K',
-      format: 'MP4',
-      resolution: '4K',
-      sizeMB: 58.2,
-      noWatermark: true,
-      qualityTag: '4K Master',
-      sampleMediaUrl: SAMPLE_VIDEOS.instagram_reel.options[0].sampleMediaUrl
-    },
-    fileName: 'Relaxing Nature - Beautiful Nature 4K.mp4',
-    downloadedAt: 'May 28, 2024 • 11:03 AM',
-    sizeMB: 58.2,
-    status: 'completed',
-    mediaUrl: SAMPLE_VIDEOS.instagram_reel.options[0].sampleMediaUrl
-  },
-  {
-    id: 'hist-4',
-    video: {
-      ...SAMPLE_VIDEOS.facebook_clip,
-      id: 'vid-travel-places',
-      title: 'Top 10 Amazing Places in the World',
-      author: 'Travel Guide',
-      thumbnail: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&auto=format&fit=crop&q=80',
-      views: '12,900,000',
-      uploadedDate: 'May 20, 2024',
-      durationFormatted: '12:30'
-    },
-    selectedOption: {
-      id: 'opt-travel-1080p',
-      label: '1080p (HD)',
-      badge: 'HD',
-      format: 'MP4',
-      resolution: '1080p',
-      sizeMB: 120.6,
-      noWatermark: true,
-      qualityTag: 'Watermark-Free',
-      sampleMediaUrl: SAMPLE_VIDEOS.facebook_clip.options[0].sampleMediaUrl
-    },
-    fileName: 'Travel Guide - Top 10 Amazing Places in the World.mp4',
-    downloadedAt: 'May 20, 2024 • 4:45 PM',
-    sizeMB: 120.6,
-    status: 'completed',
-    mediaUrl: SAMPLE_VIDEOS.facebook_clip.options[0].sampleMediaUrl
-  }
-];
+const INITIAL_HISTORY: DownloadHistoryItem[] = [];
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('home');
@@ -129,7 +32,7 @@ export default function App() {
 
   const [history, setHistory] = useState<DownloadHistoryItem[]>(() => {
     try {
-      const stored = localStorage.getItem('rapid_download_history');
+      const stored = localStorage.getItem('rapid_download_history_v2');
       if (stored) {
         return JSON.parse(stored);
       }
@@ -145,7 +48,7 @@ export default function App() {
   // Save history updates
   useEffect(() => {
     try {
-      localStorage.setItem('rapid_download_history', JSON.stringify(history));
+      localStorage.setItem('rapid_download_history_v2', JSON.stringify(history));
     } catch {}
   }, [history]);
 
@@ -165,10 +68,27 @@ export default function App() {
     if (!linkToAnalyze) return;
 
     cyberAudio.playClick();
-    const resolvedMeta = resolveVideoForUrl(linkToAnalyze);
-    setMetadata(resolvedMeta);
-    setSelectedOption(resolvedMeta.options[0]);
-    setCustomFileName(`${resolvedMeta.author} - ${resolvedMeta.title}.${resolvedMeta.options[0].format.toLowerCase()}`);
+    const detected = detectPlatform(linkToAnalyze);
+    const pendingMeta: VideoMetadata = {
+      ...SAMPLE_VIDEOS.mrbeast,
+      id: `pending-${Date.now()}`,
+      url: linkToAnalyze,
+      platform: detected.id,
+      platformName: detected.name,
+      title: `Resolving ${detected.name} media...`,
+      author: 'Public source',
+      views: 'Checking public metadata',
+      likes: 'Checking public metadata',
+      uploadedDate: 'Checking public metadata',
+      description: 'Fetching metadata from the public source.',
+      tags: [detected.name.toLowerCase(), 'resolving'],
+      downloadSupported: false,
+      downloadMessage: 'Resolving the public download stream...',
+      options: [],
+    };
+    setMetadata(pendingMeta);
+    setSelectedOption(SAMPLE_VIDEOS.mrbeast.options[0]);
+    setCustomFileName(`rapid-${detected.id}-media.mp4`);
     setCurrentView('analyzing');
 
     // Asynchronously resolve genuine remote metadata (e.g. real YouTube title/thumbnail)
@@ -181,6 +101,11 @@ export default function App() {
       }
     } catch (err) {
       console.warn('Async video resolution fallback:', err);
+      setMetadata({
+        ...pendingMeta,
+        title: 'Unable to resolve this media',
+        downloadMessage: err instanceof Error ? err.message : 'The source did not return public media metadata.',
+      });
     }
   };
 
@@ -276,6 +201,7 @@ export default function App() {
               <HomeScreen
                 url={url}
                 setUrl={setUrl}
+                onAnalyze={handleStartAnalysis}
                 isUrdu={isUrdu}
               />
             )}
