@@ -13,6 +13,7 @@ import { SUPPORTED_PLATFORMS } from '../data/mockVideos';
 import { cyberAudio } from '../utils/audio';
 import { detectPlatform } from '../utils/videoResolver';
 import { PlatformIcon } from './PlatformIcons';
+import { InstallAppButton } from './InstallAppButton';
 
 interface HomeScreenProps {
   url: string;
@@ -79,6 +80,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
            <span>MEDIA RESOLVER // QUALITY-AWARE STREAMS</span>
         </p>
       </div>
+
+      <InstallAppButton isUrdu={isUrdu} />
 
       <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
