@@ -14,12 +14,16 @@ import { GuideScreen } from './components/GuideScreen';
 import { AboutScreen } from './components/AboutScreen';
 import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { PreviewScreen } from './components/PreviewScreen';
-import { DownloadOptionsScreen } from './components/DownloadOptionsScreen';
-import { DownloadingScreen } from './components/DownloadingScreen';
+import { DownloadOptionsScreen } from './components/downloadoptionsscreen';
+import { DownloadingScreen } from './components/downloadingscreen';
 import { DownloadsHistoryScreen } from './components/DownloadsHistoryScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { CyberBackground } from './components/CyberBackground';
+import { AdminScreen } from './components/AdminScreen';
+import { initAnalytics, trackEvent } from './utils/analytics';
 import { Smartphone, Monitor } from 'lucide-react';
+import { AdminScreen } from './components/adminscreen';
+import { initAnalytics, trackEvent } from './utils/analytics';
 
 const INITIAL_HISTORY: DownloadHistoryItem[] = [];
 
@@ -51,6 +55,24 @@ export default function App() {
       localStorage.setItem('rapid_download_history_v2', JSON.stringify(history));
     } catch {}
   }, [history]);
+
+  useEffect(() => {
+    initAnalytics();
+    trackEvent('page_view');
+  }, []);
+
+  useEffect(() => {
+    trackEvent('screen_view', { screen: currentView });
+  }, [currentView]);
+
+  useEffect(() => {
+    initAnalytics();
+    trackEvent('page_view');
+  }, []);
+
+  useEffect(() => {
+    trackEvent('screen_view', { screen: currentView });
+  }, [currentView]);
 
   const handleToggleMute = () => {
     const next = !isMuted;
@@ -153,6 +175,10 @@ export default function App() {
   };
 
   const showBackButton = currentView !== 'home';
+
+  if (window.location.pathname === '/admin') return <AdminScreen />;
+
+  if (window.location.pathname === '/admin') return <AdminScreen />;
 
   return (
     <div className={`min-h-screen bg-[#030d12] text-[#e0f7f6] flex flex-col items-center relative overflow-x-hidden ${isUrdu ? 'rtl' : 'ltr'}`}>
