@@ -29,6 +29,15 @@ const EXTRACTOR_HOSTS = [
 
 const MEDIA_EXTENSIONS = /\.(?:mp4|webm|mov|m4v|mkv|avi|mp3|m4a|wav|ogg|flac)(?:$|[?#])/i;
 
+function extractorEnvironment() {
+  const bundledPath = path.join(process.cwd(), ".render", "yt-dlp");
+  return {
+    ...process.env,
+    PYTHONUNBUFFERED: "1",
+    PYTHONPATH: [bundledPath, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter),
+  };
+}
+
 function isPrivateAddress(address: string): boolean {
   const value = address.toLowerCase();
   if (net.isIPv4(value)) {
@@ -104,7 +113,7 @@ function platformForUrl(url: URL): { id: string; name: string } {
 function runYtDlp(args: string[], timeoutMs = 30_000): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.env.YTDLP_BIN || "python3", ["-m", "yt_dlp", ...args], {
-      env: { ...process.env, PYTHONUNBUFFERED: "1" },
+      env: extractorEnvironment(),
     });
     let stdout = "";
     let stderr = "";
@@ -321,7 +330,7 @@ async function startServer() {
         res.setHeader("Cache-Control", "no-store");
 
         const child = spawn(process.env.YTDLP_BIN || "python3", ["-m", "yt_dlp", ...extractorArgs], {
-          env: { ...process.env, PYTHONUNBUFFERED: "1" },
+          env: extractorEnvironment(),
         });
         let errorOutput = "";
         child.stderr.on("data", (chunk) => {
