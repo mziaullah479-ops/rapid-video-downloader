@@ -73,6 +73,12 @@ type AnalyticsEvent = {
   format?: string;
   quality?: string;
   success?: boolean;
+  ipAddress?: string;
+  city?: string;
+  region?: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
 };
 
 let analyticsStartedAt = new Date().toISOString();
@@ -103,24 +109,68 @@ async function loadAnalyticsEvents() {
 
 function persistAnalyticsEvent(event: AnalyticsEvent) {
   analyticsWriteQueue = analyticsWriteQueue.then(async () => {
+    await enrichEventLocation(event);
     await fsPromises.mkdir(path.dirname(ANALYTICS_STORE_PATH), { recursive: true });
     await fsPromises.appendFile(ANALYTICS_STORE_PATH, JSON.stringify(event) + String.fromCharCode(10), "utf8");
   }).catch((error) => console.warn("Analytics archive write failed:", error));
 }
 
 function requestAnalyticsContext(req: express.Request) {
-  const rawVisitor = String(req.headers["x-visitor-id"] || req.ip || "anonymous");
-  const rawCountry = String(
-    req.headers["cf-ipcountry"]
-      || req.headers["x-country-code"]
-      || req.headers["x-vercel-ip-country"]
-      || "Unknown",
-  );
+  const forwardedIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  const rawIp = (forwardedIp || req.ip || req.socket.remoteAddress || "anonymous").replace(/^::ffff:/, "");
+  const rawVisitor = String(req.headers["x-visitor-id"] || rawIp);
+  const rawCountry = String(req.headers["cf-ipcountry"] || req.headers["x-country-code"] || req.headers["x-vercel-ip-country"] || "Unknown");
   return {
     visitorId: rawVisitor.slice(0, 120),
+    ipAddress: rawIp.slice(0, 120),
     country: /^[a-z]{2}$/i.test(rawCountry) ? rawCountry.toUpperCase() : "Unknown",
   };
 }
+
+type GeoLookup = {
+  country?: string;
+  city?: string;
+  region?: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+};
+const geoCache = new Map<string, Promise<GeoLookup | null>>();
+
+function isPublicIp(ip: string) {
+  if (!net.isIP(ip)) return false;
+  return !/^(10\.|127\.|192\.168\.|172\.(?:1[6-9]|2[0-9]|3[0-1])\.|::1$|fc|fd)/i.test(ip);
+}
+
+function lookupIp(ip: string): Promise<GeoLookup | null> {
+  if (!isPublicIp(ip)) return Promise.resolve(null);
+  const cached = geoCache.get(ip);
+  if (cached) return cached;
+  const request = fetch("https://ipwho.is/" + encodeURIComponent(ip), { headers: { Accept: "application/json" } })
+    .then(async (response) => {
+      if (!response.ok) return null;
+      const data = await response.json() as { success?: boolean; country_code?: string; city?: string; region?: string; latitude?: number; longitude?: number; timezone?: { id?: string } };
+      if (data.success === false) return null;
+      return {
+        country: typeof data.country_code === "string" ? data.country_code.toUpperCase() : undefined,
+        city: typeof data.city === "string" ? data.city : undefined,
+        region: typeof data.region === "string" ? data.region : undefined,
+        latitude: typeof data.latitude === "number" ? data.latitude : undefined,
+        longitude: typeof data.longitude === "number" ? data.longitude : undefined,
+        timezone: typeof data.timezone?.id === "string" ? data.timezone.id : undefined,
+      };
+    })
+    .catch(() => null);
+  geoCache.set(ip, request);
+  return request;
+}
+
+async function enrichEventLocation(event: AnalyticsEvent) {
+  if (!event.ipAddress || event.city || event.latitude !== undefined) return;
+  const location = await lookupIp(event.ipAddress);
+  if (location) Object.assign(event, location);
+}
+
 
 function recordAnalyticsEvent(req: express.Request, name: string, details: Omit<AnalyticsEvent, "id" | "name" | "timestamp" | "visitorId" | "country"> = {}) {
   const context = requestAnalyticsContext(req);
@@ -165,7 +215,7 @@ function analyticsMetrics() {
   const downloadsCompleted = analyticsEvents.filter((event) => event.name === "download_completed" && event.success !== false);
   const downloadsFailed = analyticsEvents.filter((event) => event.name === "download_failed" || event.success === false);
   const unique = (events: AnalyticsEvent[]) => new Set(events.map((event) => event.visitorId)).size;
-  const countBy = (events: AnalyticsEvent[], key: "country" | "platform" | "format") => {
+  const countBy = (events: AnalyticsEvent[], key: "country" | "platform" | "format" | "city") => {
     const counts = new Map<string, number>();
     for (const event of events) {
       const value = event[key] || "Unknown";
@@ -178,6 +228,16 @@ function analyticsMetrics() {
   };
 
   return {
+  const locations = new Map<string, { city: string; country: string; latitude: number; longitude: number; count: number }>();
+  for (const event of analyticsEvents) {
+    if (typeof event.latitude !== "number" || typeof event.longitude !== "number") continue;
+    const city = event.city || event.country || "Unknown location";
+    const key = city + "|" + event.country + "|" + event.latitude + "|" + event.longitude;
+    const current = locations.get(key);
+    if (current) current.count += 1;
+    else locations.set(key, { city, country: event.country, latitude: event.latitude, longitude: event.longitude, count: 1 });
+  }
+
     generatedAt: new Date().toISOString(),
     capturedSince: analyticsStartedAt,
     retention: process.env.ANALYTICS_STORE_PATH ? "Persistent event archive" : "Local archive; persistent disk required for deploy safety",
@@ -190,6 +250,9 @@ function analyticsMetrics() {
     downloadsFailed: downloadsFailed.length,
     successRate: downloadsStarted.length ? Math.round((downloadsCompleted.length / downloadsStarted.length) * 100) : 0,
     countries: countBy(pageViews, "country"),
+    cities: countBy(analyticsEvents, "city"),
+    uniqueIps: new Set(analyticsEvents.map((event) => event.ipAddress).filter(Boolean)).size,
+    locations: [...locations.values()].sort((left, right) => right.count - left.count).slice(0, 200),
     platforms: countBy(downloadsStarted, "platform"),
     formats: countBy(downloadsStarted, "format"),
     recentActivity: analyticsEvents.slice(-50).reverse().map((event) => ({
@@ -200,6 +263,11 @@ function analyticsMetrics() {
       platform: event.platform,
       format: event.format,
       success: event.success,
+      ipAddress: event.ipAddress,
+      city: event.city,
+      region: event.region,
+      latitude: event.latitude,
+      longitude: event.longitude,
     })),
   };
 }
