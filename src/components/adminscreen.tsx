@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -15,8 +15,11 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 type CountItem = { name: string; count: number };
+type LocationItem = { city: string; country: string; latitude: number; longitude: number; count: number };
 type ActivityItem = {
   id: string;
   name: string;
@@ -25,6 +28,11 @@ type ActivityItem = {
   platform?: string;
   format?: string;
   success?: boolean;
+  ipAddress?: string;
+  city?: string;
+  region?: string;
+  latitude?: number;
+  longitude?: number;
 };
 type Metrics = {
   generatedAt: string;
@@ -42,6 +50,9 @@ type Metrics = {
   platforms: CountItem[];
   formats: CountItem[];
   recentActivity: ActivityItem[];
+  cities: CountItem[];
+  uniqueIps: number;
+  locations: LocationItem[];
 };
 
 const countryNames: Record<string, string> = {
@@ -76,50 +87,91 @@ function formatTime(value: string) {
   return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function WorldMap({ countries }: { countries: CountItem[] }) {
-  const max = Math.max(...countries.map((item) => item.count), 1);
-  const mapped = countries.filter((item) => Boolean(countryPoints[item.name])).length;
-  const unmapped = Math.max(0, countries.length - mapped);
-  const labels = countries.filter((item) => Boolean(countryPoints[item.name])).map((item) => displayName(item.name)).join(", ");
+function GeoMap({ locations }: { locations: LocationItem[] }) {
+  const mapElementRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerLayerRef = useRef<L.LayerGroup | null>(null);
+
+  useEffect(() => {
+    if (!mapElementRef.current || mapRef.current) return;
+    const map = L.map(mapElementRef.current, { zoomControl: false, worldCopyJump: true, minZoom: 1, maxZoom: 8 }).setView([20, 0], 1);
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: "&copy; OpenStreetMap &copy; CARTO",
+      subdomains: "abcd",
+      maxZoom: 19,
+    }).addTo(map);
+    mapRef.current = map;
+    window.setTimeout(() => map.invalidateSize(), 120);
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      markerLayerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    markerLayerRef.current?.clearLayers();
+    const layer = L.layerGroup().addTo(map);
+    const bounds: [number, number][] = [];
+    const maximum = Math.max(locations[0]?.count || 1, 1);
+    locations.forEach((location) => {
+      const point: [number, number] = [location.latitude, location.longitude];
+      bounds.push(point);
+      const intensity = Math.min(1, location.count / maximum);
+      L.circleMarker(point, {
+        radius: 7 + intensity * 12,
+        color: "#00ffd5",
+        weight: 2,
+        fillColor: "#00ffd5",
+        fillOpacity: 0.35 + intensity * 0.45,
+      }).bindTooltip(location.city + " · " + location.country + " · " + location.count + " signals", { direction: "top", opacity: 0.95 }).addTo(layer);
+    });
+    markerLayerRef.current = layer;
+    if (bounds.length) map.fitBounds(bounds, { padding: [36, 36], maxZoom: 4 });
+    return () => layer.remove();
+  }, [locations]);
+
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[#00ffd5]/20 bg-[#031118] p-3">
-      <svg viewBox="0 0 720 340" className="h-[360px] w-full" role="img" aria-label={"Live visitor country map. " + (labels || "No country data yet")}>
-        <defs>
-          <pattern id="admin-grid" width="36" height="36" patternUnits="userSpaceOnUse">
-            <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#00ffd5" strokeOpacity=".08" strokeWidth="1" />
-          </pattern>
-          <filter id="admin-glow"><feGaussianBlur stdDeviation="4" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
-        </defs>
-        <rect width="720" height="340" fill="url(#admin-grid)" />
-        <path d="M72 92 128 64 190 78 216 115 193 137 153 129 130 158 91 143 56 116ZM211 171 250 190 270 227 254 274 225 258 214 223 184 196ZM306 84 350 66 379 78 405 107 393 135 356 130 339 158 309 142 288 113ZM394 161 435 155 461 179 450 204 423 215 407 244 381 227 388 194ZM483 76 548 82 588 111 616 146 593 178 548 165 522 184 489 159 468 126ZM549 228 613 228 650 250 628 278 573 275 538 253Z" fill="#0b3842" stroke="#1a8182" strokeOpacity=".7" strokeWidth="2" />
-        <path d="M25 170H695M360 30V310" stroke="#00ffd5" strokeOpacity=".12" strokeDasharray="3 8" />
-        {countries.map((item) => {
-          const point = countryPoints[item.name];
-          if (!point) return null;
-          const intensity = item.count / max;
-          const radius = 5 + intensity * 12;
-          return (
-            <g key={item.name} tabIndex={0} className="outline-none">
-              <title>{displayName(item.name)}: {item.count} signals</title>
-              <circle cx={point[0]} cy={point[1]} r={radius + 9} fill="#00ffd5" opacity={0.05 + intensity * 0.1} />
-              <circle cx={point[0]} cy={point[1]} r={radius + 3} fill="none" stroke="#00ffd5" strokeOpacity=".25" strokeDasharray="2 4" />
-              <circle cx={point[0]} cy={point[1]} r={radius} fill="#00ffd5" opacity=".92" />
-              <text x={point[0] + 12} y={point[1] + 4} fill="#d8fffa" fontSize="11" fontFamily="monospace">{item.name} {item.count}</text>
-            </g>
-          );
-        })}
-      </svg>
-      <div className="pointer-events-none absolute left-5 top-5 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#00ffd5]/60">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-[#00ffd5]" /> Live geo telemetry
+    <div className="overflow-hidden rounded-3xl border border-[#00ffd5]/25 bg-[#020e14] shadow-[0_0_50px_rgba(0,255,213,0.08)]">
+      <div className="relative h-[560px]">
+        <div ref={mapElementRef} className="h-full w-full" />
+        <div className="pointer-events-none absolute left-5 top-5 flex flex-wrap items-center gap-2 rounded-full border border-[#00ffd5]/30 bg-[#021a22]/90 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-[#9ffbef] shadow-lg">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[#00ffd5] shadow-[0_0_12px_#00ffd5]" /> LIVE IP GEO INTELLIGENCE
+        </div>
+        <div className="pointer-events-none absolute bottom-4 left-4 rounded-xl border border-white/10 bg-[#02090d]/85 px-3 py-2 text-[10px] uppercase tracking-[0.14em] text-white/60 backdrop-blur-md">{locations.length} mapped locations · zoom and drag enabled</div>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.14em] text-white/40">
-        <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#00ffd5]" />Signal intensity</span>
-        <span>{mapped} mapped countries</span>
-        {unmapped > 0 && <span>{unmapped} other / unknown</span>}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#00ffd5]/15 px-5 py-3 text-[11px] text-white/60">
+        <span>Marker size follows signal volume</span><span className="text-[#00ffd5]">City-level data appears after IP lookup</span>
       </div>
     </div>
   );
 }
+
+function GeoIntelligencePage({ metrics, onBack }: { metrics: Metrics; onBack: () => void }) {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div><p className="text-[10px] uppercase tracking-[0.28em] text-[#00ffd5]/70">Geo intelligence // dedicated view</p><h2 className="mt-2 font-display text-3xl font-bold text-white">Visitor locations</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">Live city and country signals derived from public IP geolocation. Exact IP values remain restricted to this protected admin panel.</p></div>
+        <button onClick={onBack} className="rounded-xl border border-[#00ffd5]/30 px-4 py-2 text-xs font-bold tracking-[0.14em] text-[#9ffbef] hover:bg-[#00ffd5]/10">BACK TO OVERVIEW</button>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Mapped points" value={metrics.locations.length.toLocaleString()} icon={Globe2} />
+        <MetricCard label="Unique IPs" value={metrics.uniqueIps.toLocaleString()} icon={Users} tone="green" />
+        <MetricCard label="Cities" value={metrics.cities.length.toLocaleString()} icon={Activity} />
+        <MetricCard label="Countries" value={metrics.countries.length.toLocaleString()} icon={DownloadCloud} tone="amber" />
+      </div>
+      <GeoMap locations={metrics.locations} />
+      <div className="grid gap-6 xl:grid-cols-2">
+        <section className="rounded-3xl border border-[#00ffd5]/15 bg-[#041820]/90 p-5"><div className="mb-4 flex items-center justify-between"><div><h3 className="font-display text-xl font-bold">Cities by signal volume</h3><p className="text-xs text-white/45">Top detected cities across all stored events</p></div><span className="text-xs text-[#00ffd5]">{metrics.cities.length} cities</span></div><div className="space-y-3">{metrics.cities.slice(0, 12).map((item, index) => <div key={item.name} className="flex items-center gap-3"><span className="w-5 text-xs text-white/35">{String(index + 1).padStart(2, "0")}</span><div className="min-w-0 flex-1"><div className="flex justify-between gap-3 text-xs"><span className="truncate text-white/85">{item.name}</span><span className="text-[#00ffd5]">{item.count}</span></div><div className="mt-1 h-1.5 rounded-full bg-white/5"><div className="h-full rounded-full bg-gradient-to-r from-[#00ffd5] to-[#00e599]" style={{ width: `${Math.max(5, (item.count / Math.max(metrics.cities[0]?.count || 1, 1)) * 100)}%` }} /></div></div></div>)}</div></section>
+        <section className="rounded-3xl border border-[#00ffd5]/15 bg-[#041820]/90 p-5"><div className="mb-4"><h3 className="font-display text-xl font-bold">Location feed</h3><p className="text-xs text-white/45">Highest-confidence city coordinates currently available</p></div><div className="space-y-2">{metrics.locations.slice(0, 12).map((location) => <div key={location.city + location.country + location.latitude} className="flex items-center justify-between rounded-xl border border-white/5 bg-[#020d12] px-3 py-3"><div><p className="text-sm font-bold text-white">{location.city}</p><p className="text-[11px] uppercase tracking-[0.12em] text-[#7feadc]">{location.country} · {location.latitude.toFixed(2)}, {location.longitude.toFixed(2)}</p></div><span className="rounded-full border border-[#00ffd5]/25 px-2 py-1 text-xs text-[#00ffd5]">{location.count}</span></div>)}</div></section>
+      </div>
+    </div>
+  );
+}
+
 
 function MetricCard({ label, value, icon: Icon, tone = 'cyan' }: { label: string; value: string | number; icon: React.ElementType; tone?: 'cyan' | 'green' | 'amber' }) {
   const color = tone === 'green' ? 'text-[#00e599]' : tone === 'amber' ? 'text-[#ffd166]' : 'text-[#00ffd5]';
@@ -140,6 +192,7 @@ export const AdminScreen: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [eventFilter, setEventFilter] = useState('all');
+  const [activeView, setActiveView] = useState<'overview' | 'geo'>(() => window.location.hash === '#geo' ? 'geo' : 'overview');
   const filteredActivity = metrics?.recentActivity.filter((item) => eventFilter === 'all' || item.name === eventFilter) || [];
   const exportMetrics = async () => {
     if (!metrics) return;
@@ -230,7 +283,13 @@ export const AdminScreen: React.FC = () => {
           <div className="flex items-center gap-3"><div className="rounded-xl bg-[#00ffd5]/10 p-3 text-[#00ffd5]"><Activity /></div><div><p className="text-[10px] uppercase tracking-[0.25em] text-[#00ffd5]/60">Rapid command center // live</p><h1 className="font-display text-2xl font-bold">Traffic intelligence</h1></div></div>
           <div className="flex items-center gap-2"><button onClick={exportMetrics} className="flex items-center gap-2 rounded-lg border border-[#00ffd5]/20 px-3 py-2 text-xs text-[#00ffd5] hover:bg-[#00ffd5]/10" title="Export JSON"><FileJson size={16} /><span className="hidden sm:inline">Export</span></button><button onClick={() => void loadMetrics()} className="rounded-lg border border-[#00ffd5]/20 p-2 text-[#00ffd5] hover:bg-[#00ffd5]/10" title="Refresh"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button><button onClick={() => void logout()} className="flex items-center gap-2 rounded-lg border border-[#00ffd5]/20 px-3 py-2 text-xs text-white/70 hover:text-white"><LogOut size={15} /> Exit</button></div>
         </header>
+        <nav className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/70 p-2">
+          <button onClick={() => setActiveView('overview')} className={`rounded-xl px-4 py-2 text-xs font-bold tracking-[0.14em] ${activeView === 'overview' ? 'bg-[#00ffd5] text-[#021318]' : 'text-[#9ffbef] hover:bg-[#00ffd5]/10'}`}>OVERVIEW</button>
+          <button onClick={() => { setActiveView('geo'); window.history.replaceState(null, "", "#geo"); }} className={`rounded-xl px-4 py-2 text-xs font-bold tracking-[0.14em] ${activeView === 'geo' ? 'bg-[#00ffd5] text-[#021318]' : 'text-[#9ffbef] hover:bg-[#00ffd5]/10'}`}>GEO INTELLIGENCE</button>
+        </nav>
 
+
+        {activeView === 'geo' ? <GeoIntelligencePage metrics={metrics} onBack={() => { setActiveView('overview'); window.history.replaceState(null, "", window.location.pathname); }} /> : <>
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <MetricCard label="Active now" value={metrics.activeUsers} icon={Users} tone="green" />
           <MetricCard label="Page views" value={metrics.pageViews} icon={Globe2} />
@@ -242,7 +301,7 @@ export const AdminScreen: React.FC = () => {
         </section>
 
         <section className="grid gap-5 xl:grid-cols-[1.65fr_1fr]">
-          <div className="rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/90 p-4"><div className="mb-3 flex items-center justify-between"><div><h2 className="font-display text-lg font-bold">Global activity map</h2><p className="text-[11px] text-white/45">Countries detected from live requests and page views</p></div><span className="rounded-full border border-[#00e599]/30 px-2 py-1 text-[10px] text-[#00e599]">ONLINE</span></div><WorldMap countries={metrics.countries} /></div>
+          <div className="rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/90 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-display text-xl font-bold">Geo intelligence</h2><p className="text-[11px] text-white/50">Open the dedicated live IP and city map</p></div><button onClick={() => { setActiveView('geo'); window.history.replaceState(null, "", "#geo"); }} className="rounded-xl border border-[#00ffd5]/30 px-3 py-2 text-[10px] font-bold tracking-[0.14em] text-[#9ffbef] hover:bg-[#00ffd5]/10">OPEN FULL MAP</button></div><div className="mt-5 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-[#020d12] p-3"><p className="text-2xl font-bold text-[#00ffd5]">{metrics.locations.length}</p><p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/45">Mapped</p></div><div className="rounded-xl bg-[#020d12] p-3"><p className="text-2xl font-bold text-[#00e599]">{metrics.cities.length}</p><p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/45">Cities</p></div><div className="rounded-xl bg-[#020d12] p-3"><p className="text-2xl font-bold text-[#ffd166]">{metrics.uniqueIps}</p><p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/45">IPs</p></div></div></div>
           <div className="rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/90 p-4"><div className="mb-4 flex items-center justify-between"><div><h2 className="font-display text-lg font-bold">Top countries</h2><p className="text-[11px] text-white/45">Visitor share by country</p></div><ArrowUpRight size={17} className="text-[#00ffd5]" /></div><div className="space-y-3">{metrics.countries.length ? metrics.countries.map((item, index) => <div key={item.name}><div className="mb-1 flex justify-between text-xs"><span className="text-white/80">{index + 1}. {displayName(item.name)}</span><span className="text-[#00ffd5]">{item.count}</span></div><div className="h-1.5 rounded-full bg-white/5"><div className="h-full rounded-full bg-[#00ffd5]" style={{ width: `${Math.max(8, (item.count / Math.max(metrics.countries[0].count, 1)) * 100)}%` }} /></div></div>) : <p className="text-sm text-white/45">No page-view data yet.</p>}</div></div>
         </section>
 
@@ -261,7 +320,8 @@ export const AdminScreen: React.FC = () => {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/90 p-4"><div className="mb-3 flex items-center justify-between"><div><h2 className="font-display text-lg font-bold">Recent signal feed</h2><p className="text-[11px] text-white/45">Latest events captured by the service</p></div><div className="flex flex-wrap items-center justify-end gap-2"><label className="flex items-center gap-1 rounded-lg border border-[#00ffd5]/15 bg-[#020d12] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/50"><Filter size={13} className="text-[#00ffd5]" /><select value={eventFilter} onChange={(event) => setEventFilter(event.target.value)} className="bg-transparent text-[#00ffd5] outline-none"><option value="all">All events</option><option value="page_view">Page views</option><option value="download_started">Started</option><option value="download_completed">Completed</option><option value="download_failed">Failed</option></select></label><span className="text-[10px] uppercase tracking-[0.18em] text-[#00ffd5]/60">Auto refresh 15s</span></div></div><div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left text-xs"><thead className="text-[10px] uppercase tracking-[0.16em] text-white/35"><tr><th className="pb-3">Event</th><th className="pb-3">Country</th><th className="pb-3">Platform</th><th className="pb-3">Format</th><th className="pb-3">Time</th><th className="pb-3">Status</th></tr></thead><tbody>{filteredActivity.map((item) => <tr key={item.id} className="border-t border-white/5"><td className="py-3 text-white/75">{item.name.replaceAll('_', ' ')}</td><td className="py-3 text-[#00ffd5]">{item.country}</td><td className="py-3 capitalize text-white/60">{item.platform || '—'}</td><td className="py-3 uppercase text-white/60">{item.format || '—'}</td><td className="py-3 text-white/45">{formatTime(item.timestamp)}</td><td className={`py-3 ${item.success === false ? 'text-red-300' : 'text-[#00e599]'}`}>{item.success === false ? 'FAILED' : 'CAPTURED'}</td></tr>)}</tbody></table>{!filteredActivity.length && <p className="py-8 text-center text-sm text-white/40">Waiting for the first signal.</p>}</div></section>
+        <section className="rounded-3xl border border-[#00ffd5]/15 bg-[#041820]/90 p-5"><div className="mb-3 flex items-center justify-between"><div><h2 className="font-display text-xl font-bold">Recent signal feed</h2><p className="text-[11px] text-white/45">Latest 50 events with IP and city enrichment</p></div><div className="flex flex-wrap items-center justify-end gap-2"><label className="flex items-center gap-1 rounded-lg border border-[#00ffd5]/15 bg-[#020d12] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/50"><Filter size={13} className="text-[#00ffd5]" /><select value={eventFilter} onChange={(event) => setEventFilter(event.target.value)} className="bg-transparent text-[#00ffd5] outline-none"><option value="all">All events</option><option value="page_view">Page views</option><option value="download_started">Started</option><option value="download_completed">Completed</option><option value="download_failed">Failed</option></select></label><span className="text-[10px] uppercase tracking-[0.18em] text-[#00ffd5]/60">Auto refresh 15s</span></div></div><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-xs"><thead className="text-[10px] uppercase tracking-[0.16em] text-white/35"><tr><th className="pb-3">Event</th><th className="pb-3">IP / City</th><th className="pb-3">Country</th><th className="pb-3">Platform</th><th className="pb-3">Format</th><th className="pb-3">Time</th><th className="pb-3">Status</th></tr></thead><tbody>{filteredActivity.map((item) => <tr key={item.id} className="border-t border-white/5"><td className="py-3 text-white/75">{item.name.replaceAll('_', ' ')}</td><td className="py-3"><span className="block text-[#b8fff6]">{item.ipAddress || 'Unknown IP'}</span><span className="block text-[10px] text-white/45">{item.city || 'City pending'}</span></td><td className="py-3 text-[#00ffd5]">{item.country}</td><td className="py-3 capitalize text-white/60">{item.platform || '—'}</td><td className="py-3 uppercase text-white/60">{item.format || '—'}</td><td className="py-3 text-white/45">{formatTime(item.timestamp)}</td><td className={`py-3 ${item.success === false ? 'text-red-300' : 'text-[#00e599]'}`}>{item.success === false ? 'FAILED' : 'CAPTURED'}</td></tr>)}</tbody></table>{!filteredActivity.length && <p className="py-8 text-center text-sm text-white/40">Waiting for the first signal.</p>}</div></section>
+        </>}
       </div>
     </main>
   );
