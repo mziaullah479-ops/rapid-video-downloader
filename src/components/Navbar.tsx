@@ -165,7 +165,7 @@ export const BottomNav: React.FC<{
               className={`flex flex-col items-center justify-center py-1 px-4 rounded-xl relative transition-all duration-200 cursor-pointer ${
                 isActive
                   ? 'text-[#00ffd5]'
-                  : 'text-[#00ffd5]/40 hover:text-[#00ffd5]/80'
+                  : 'text-[#7feadc] hover:text-[#00ffd5]'
               }`}
             >
               {/* Active glow indicator */}
