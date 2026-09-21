@@ -30,6 +30,8 @@ type Metrics = {
   generatedAt: string;
   capturedSince: string;
   retention: string;
+  storagePath: string;
+  eventCount: number;
   pageViews: number;
   activeUsers: number;
   downloadsStarted: number;
@@ -81,7 +83,7 @@ function WorldMap({ countries }: { countries: CountItem[] }) {
   const labels = countries.filter((item) => Boolean(countryPoints[item.name])).map((item) => displayName(item.name)).join(", ");
   return (
     <div className="relative overflow-hidden rounded-2xl border border-[#00ffd5]/20 bg-[#031118] p-3">
-      <svg viewBox="0 0 720 340" className="h-[280px] w-full" role="img" aria-label={"Live visitor country map. " + (labels || "No country data yet")}>
+      <svg viewBox="0 0 720 340" className="h-[360px] w-full" role="img" aria-label={"Live visitor country map. " + (labels || "No country data yet")}>
         <defs>
           <pattern id="admin-grid" width="36" height="36" patternUnits="userSpaceOnUse">
             <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#00ffd5" strokeOpacity=".08" strokeWidth="1" />
@@ -139,13 +141,15 @@ export const AdminScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [eventFilter, setEventFilter] = useState('all');
   const filteredActivity = metrics?.recentActivity.filter((item) => eventFilter === 'all' || item.name === eventFilter) || [];
-  const exportMetrics = () => {
+  const exportMetrics = async () => {
     if (!metrics) return;
-    const blob = new Blob([JSON.stringify(metrics, null, 2)], { type: 'application/json' });
+    const response = await fetch('/api/admin/events', { credentials: 'include' });
+    const payload = response.ok ? await response.json() : metrics;
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'rapid-analytics-' + new Date().toISOString().slice(0, 10) + '.json';
+    link.download = 'rapid-analytics-archive-' + new Date().toISOString().slice(0, 10) + '.json';
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -220,20 +224,21 @@ export const AdminScreen: React.FC = () => {
   }
 
   return (
-    <main className="min-h-screen bg-[#02090d] px-3 py-5 font-mono-cyber text-[#e0f7f6] sm:px-6 lg:px-10">
-      <div className="mx-auto max-w-7xl space-y-5">
-        <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/90 px-5 py-4">
+    <main className="min-h-screen bg-[#02090d] px-4 py-6 font-mono-cyber text-[#e0f7f6] sm:px-8 lg:px-12 xl:px-16">
+      <div className="mx-auto max-w-[1600px] space-y-6">
+        <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/90 px-6 py-5">
           <div className="flex items-center gap-3"><div className="rounded-xl bg-[#00ffd5]/10 p-3 text-[#00ffd5]"><Activity /></div><div><p className="text-[10px] uppercase tracking-[0.25em] text-[#00ffd5]/60">Rapid command center // live</p><h1 className="font-display text-2xl font-bold">Traffic intelligence</h1></div></div>
           <div className="flex items-center gap-2"><button onClick={exportMetrics} className="flex items-center gap-2 rounded-lg border border-[#00ffd5]/20 px-3 py-2 text-xs text-[#00ffd5] hover:bg-[#00ffd5]/10" title="Export JSON"><FileJson size={16} /><span className="hidden sm:inline">Export</span></button><button onClick={() => void loadMetrics()} className="rounded-lg border border-[#00ffd5]/20 p-2 text-[#00ffd5] hover:bg-[#00ffd5]/10" title="Refresh"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button><button onClick={() => void logout()} className="flex items-center gap-2 rounded-lg border border-[#00ffd5]/20 px-3 py-2 text-xs text-white/70 hover:text-white"><LogOut size={15} /> Exit</button></div>
         </header>
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <MetricCard label="Active now" value={metrics.activeUsers} icon={Users} tone="green" />
           <MetricCard label="Page views" value={metrics.pageViews} icon={Globe2} />
           <MetricCard label="Downloads started" value={metrics.downloadsStarted} icon={Download} />
           <MetricCard label="Completed" value={metrics.downloadsCompleted} icon={ShieldCheck} tone="green" />
           <MetricCard label="Failed" value={metrics.downloadsFailed} icon={AlertTriangle} tone="amber" />
           <MetricCard label="Success rate" value={`${metrics.successRate}%`} icon={Zap} tone="amber" />
+          <MetricCard label="Stored events" value={metrics.eventCount.toLocaleString()} icon={DownloadCloud} />
         </section>
 
         <section className="grid gap-5 xl:grid-cols-[1.65fr_1fr]">
@@ -244,7 +249,16 @@ export const AdminScreen: React.FC = () => {
         <section className="grid gap-5 lg:grid-cols-3">
           <div className="rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/90 p-4"><h2 className="font-display text-lg font-bold">Platform downloads</h2><div className="mt-4 space-y-3">{metrics.platforms.length ? metrics.platforms.map((item) => <div key={item.name} className="flex items-center justify-between rounded-xl bg-[#020d12] px-3 py-2 text-sm"><span className="capitalize text-white/75">{item.name}</span><span className="font-bold text-[#00ffd5]">{item.count}</span></div>) : <p className="mt-4 text-sm text-white/45">No download data yet.</p>}</div></div>
           <div className="rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/90 p-4"><h2 className="font-display text-lg font-bold">Format mix</h2><div className="mt-4 space-y-3">{metrics.formats.length ? metrics.formats.map((item) => <div key={item.name} className="flex items-center justify-between rounded-xl bg-[#020d12] px-3 py-2 text-sm"><span className="uppercase text-white/75">{item.name}</span><span className="font-bold text-[#00e599]">{item.count}</span></div>) : <p className="mt-4 text-sm text-white/45">No format data yet.</p>}</div><p className="mt-5 text-xs text-white/35">Failed jobs: {metrics.downloadsFailed}</p></div>
-          <div className="rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/90 p-4"><h2 className="font-display text-lg font-bold">Data status</h2><div className="mt-4 space-y-3 text-xs text-white/60"><p><span className="text-[#00ffd5]">Captured since:</span> {new Date(metrics.capturedSince).toLocaleString()}</p><p><span className="text-[#00ffd5]">Last refresh:</span> {new Date(metrics.generatedAt).toLocaleTimeString()}</p><p><span className="text-[#00ffd5]">Retention:</span> {metrics.retention}</p><p><span className="text-[#00ffd5]">Recent feed:</span> {metrics.recentActivity.length} events</p><p className="rounded-xl border border-[#ffd166]/20 bg-[#ffd166]/5 p-3 text-[#ffe7a5]">For historical reporting after a restart, add a GA4 measurement ID or connect durable storage.</p></div></div>
+          <div className="rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/90 p-5"><h2 className="font-display text-lg font-bold">Data status</h2>
+            <div className="mt-4 space-y-3 text-xs text-white/70">
+              <p><span className="text-[#00ffd5]">Captured since:</span> {new Date(metrics.capturedSince).toLocaleString()}</p>
+              <p><span className="text-[#00ffd5]">Last refresh:</span> {new Date(metrics.generatedAt).toLocaleTimeString()}</p>
+              <p><span className="text-[#00ffd5]">Stored events:</span> {metrics.eventCount.toLocaleString()}</p>
+              <p><span className="text-[#00ffd5]">Archive mode:</span> {metrics.retention}</p>
+              <p><span className="text-[#00ffd5]">Path:</span> {metrics.storagePath}</p>
+              <p className="rounded-xl border border-[#00ffd5]/20 bg-[#00ffd5]/5 p-3 text-[#b8fff6]">Events are appended to the archive and are not trimmed by the app. A persistent disk or database is required to keep the archive across deploys.</p>
+            </div>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-[#00ffd5]/15 bg-[#041820]/90 p-4"><div className="mb-3 flex items-center justify-between"><div><h2 className="font-display text-lg font-bold">Recent signal feed</h2><p className="text-[11px] text-white/45">Latest events captured by the service</p></div><div className="flex flex-wrap items-center justify-end gap-2"><label className="flex items-center gap-1 rounded-lg border border-[#00ffd5]/15 bg-[#020d12] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/50"><Filter size={13} className="text-[#00ffd5]" /><select value={eventFilter} onChange={(event) => setEventFilter(event.target.value)} className="bg-transparent text-[#00ffd5] outline-none"><option value="all">All events</option><option value="page_view">Page views</option><option value="download_started">Started</option><option value="download_completed">Completed</option><option value="download_failed">Failed</option></select></label><span className="text-[10px] uppercase tracking-[0.18em] text-[#00ffd5]/60">Auto refresh 15s</span></div></div><div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left text-xs"><thead className="text-[10px] uppercase tracking-[0.16em] text-white/35"><tr><th className="pb-3">Event</th><th className="pb-3">Country</th><th className="pb-3">Platform</th><th className="pb-3">Format</th><th className="pb-3">Time</th><th className="pb-3">Status</th></tr></thead><tbody>{filteredActivity.map((item) => <tr key={item.id} className="border-t border-white/5"><td className="py-3 text-white/75">{item.name.replaceAll('_', ' ')}</td><td className="py-3 text-[#00ffd5]">{item.country}</td><td className="py-3 capitalize text-white/60">{item.platform || '—'}</td><td className="py-3 uppercase text-white/60">{item.format || '—'}</td><td className="py-3 text-white/45">{formatTime(item.timestamp)}</td><td className={`py-3 ${item.success === false ? 'text-red-300' : 'text-[#00e599]'}`}>{item.success === false ? 'FAILED' : 'CAPTURED'}</td></tr>)}</tbody></table>{!filteredActivity.length && <p className="py-8 text-center text-sm text-white/40">Waiting for the first signal.</p>}</div></section>
