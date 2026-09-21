@@ -75,11 +75,38 @@ type AnalyticsEvent = {
   success?: boolean;
 };
 
-const analyticsStartedAt = new Date().toISOString();
+let analyticsStartedAt = new Date().toISOString();
 const analyticsEvents: AnalyticsEvent[] = [];
 const adminSessions = new Map<string, number>();
-const MAX_ANALYTICS_EVENTS = 10_000;
+const ANALYTICS_STORE_PATH = process.env.ANALYTICS_STORE_PATH || path.join(process.cwd(), "data", "analytics-events.jsonl");
+let analyticsWriteQueue = Promise.resolve();
 const ADMIN_SESSION_MS = 8 * 60 * 60 * 1000;
+
+async function loadAnalyticsEvents() {
+  try {
+    const raw = await fsPromises.readFile(ANALYTICS_STORE_PATH, "utf8");
+    for (const line of raw.split(String.fromCharCode(10))) {
+      if (!line.trim()) continue;
+      try {
+        const event = JSON.parse(line) as AnalyticsEvent;
+        if (event.id && event.name && event.timestamp) analyticsEvents.push(event);
+      } catch {
+        // Ignore a damaged line without discarding the rest of the archive.
+      }
+    }
+    if (analyticsEvents[0]?.timestamp) analyticsStartedAt = analyticsEvents[0].timestamp;
+  } catch (error) {
+    const code = error && typeof error === "object" && "code" in error ? (error as { code?: string }).code : undefined;
+    if (code !== "ENOENT") console.warn("Analytics archive unavailable:", error);
+  }
+}
+
+function persistAnalyticsEvent(event: AnalyticsEvent) {
+  analyticsWriteQueue = analyticsWriteQueue.then(async () => {
+    await fsPromises.mkdir(path.dirname(ANALYTICS_STORE_PATH), { recursive: true });
+    await fsPromises.appendFile(ANALYTICS_STORE_PATH, JSON.stringify(event) + String.fromCharCode(10), "utf8");
+  }).catch((error) => console.warn("Analytics archive write failed:", error));
+}
 
 function requestAnalyticsContext(req: express.Request) {
   const rawVisitor = String(req.headers["x-visitor-id"] || req.ip || "anonymous");
@@ -97,14 +124,15 @@ function requestAnalyticsContext(req: express.Request) {
 
 function recordAnalyticsEvent(req: express.Request, name: string, details: Omit<AnalyticsEvent, "id" | "name" | "timestamp" | "visitorId" | "country"> = {}) {
   const context = requestAnalyticsContext(req);
-  analyticsEvents.push({
+  const event: AnalyticsEvent = {
     id: crypto.randomUUID(),
     name,
     timestamp: new Date().toISOString(),
     ...context,
     ...details,
-  });
-  if (analyticsEvents.length > MAX_ANALYTICS_EVENTS) analyticsEvents.splice(0, analyticsEvents.length - MAX_ANALYTICS_EVENTS);
+  };
+  analyticsEvents.push(event);
+  persistAnalyticsEvent(event);
 }
 
 function readCookie(req: express.Request, name: string): string | undefined {
@@ -152,7 +180,9 @@ function analyticsMetrics() {
   return {
     generatedAt: new Date().toISOString(),
     capturedSince: analyticsStartedAt,
-    retention: "Current running service instance",
+    retention: process.env.ANALYTICS_STORE_PATH ? "Persistent event archive" : "Local archive; persistent disk required for deploy safety",
+    storagePath: ANALYTICS_STORE_PATH,
+    eventCount: analyticsEvents.length,
     pageViews: pageViews.length,
     activeUsers: unique(recentEvents),
     downloadsStarted: downloadsStarted.length,
@@ -162,7 +192,7 @@ function analyticsMetrics() {
     countries: countBy(pageViews, "country"),
     platforms: countBy(downloadsStarted, "platform"),
     formats: countBy(downloadsStarted, "format"),
-    recentActivity: analyticsEvents.slice(-18).reverse().map((event) => ({
+    recentActivity: analyticsEvents.slice(-50).reverse().map((event) => ({
       id: event.id,
       name: event.name,
       timestamp: event.timestamp,
@@ -772,6 +802,7 @@ async function pipeDirectMedia(target: URL, res: express.Response, fileName: str
 }
 
 async function startServer() {
+  await loadAnalyticsEvents();
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
@@ -834,6 +865,11 @@ async function startServer() {
   app.get("/api/admin/metrics", (req, res) => {
     if (!isAdminAuthenticated(req)) return res.status(401).json({ error: "Admin authentication is required." });
     return res.json(analyticsMetrics());
+  });
+
+  app.get("/api/admin/events", (req, res) => {
+    if (!isAdminAuthenticated(req)) return res.status(401).json({ error: "Admin authentication is required." });
+    return res.json({ generatedAt: new Date().toISOString(), count: analyticsEvents.length, events: analyticsEvents });
   });
 
   app.get("/api/resolve-video", async (req, res) => {
@@ -1123,6 +1159,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
+    app.get("/favicon.ico", (_req, res) => res.sendFile(path.join(distPath, "icon-512.png")));
     app.use(express.static(distPath));
     app.get("*", (_req, res) => res.sendFile(path.join(distPath, "index.html")));
   }
