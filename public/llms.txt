@@ -22,14 +22,14 @@ YouTube, TikTok, Instagram, Facebook, X, Reddit, Pinterest, Vimeo, Dailymotion a
 
 ## Helpful pages
 
-- Home: https://www.rapid-video-downloader.online/
-- Public video downloader: https://www.rapid-video-downloader.online/video-downloader/
-- Video to MP3: https://www.rapid-video-downloader.online/video-to-mp3/
-- TikTok guide: https://www.rapid-video-downloader.online/tiktok-video-downloader/
-- Facebook guide: https://www.rapid-video-downloader.online/facebook-video-downloader/
-- Instagram guide: https://www.rapid-video-downloader.online/instagram-video-downloader/
-- FAQ: https://www.rapid-video-downloader.online/faq/
-- About and limitations: https://www.rapid-video-downloader.online/about/
-- App manifest: https://www.rapid-video-downloader.online/manifest.webmanifest
-- Sitemap: https://www.rapid-video-downloader.online/sitemap.xml
-- Robots: https://www.rapid-video-downloader.online/robots.txt
+- [Home](https://www.rapid-video-downloader.online/)
+- [Public video downloader](https://www.rapid-video-downloader.online/video-downloader/)
+- [Video to MP3](https://www.rapid-video-downloader.online/video-to-mp3/)
+- [TikTok guide](https://www.rapid-video-downloader.online/tiktok-video-downloader/)
+- [Facebook guide](https://www.rapid-video-downloader.online/facebook-video-downloader/)
+- [Instagram guide](https://www.rapid-video-downloader.online/instagram-video-downloader/)
+- [FAQ](https://www.rapid-video-downloader.online/faq/)
+- [About and limitations](https://www.rapid-video-downloader.online/about/)
+- [App manifest](https://www.rapid-video-downloader.online/manifest.webmanifest)
+- [Sitemap](https://www.rapid-video-downloader.online/sitemap.xml)
+- [Robots](https://www.rapid-video-downloader.online/robots.txt)
