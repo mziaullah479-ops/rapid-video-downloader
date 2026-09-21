@@ -227,7 +227,6 @@ function analyticsMetrics() {
       .slice(0, 12);
   };
 
-  return {
   const locations = new Map<string, { city: string; country: string; latitude: number; longitude: number; count: number }>();
   for (const event of analyticsEvents) {
     if (typeof event.latitude !== "number" || typeof event.longitude !== "number") continue;
@@ -238,6 +237,7 @@ function analyticsMetrics() {
     else locations.set(key, { city, country: event.country, latitude: event.latitude, longitude: event.longitude, count: 1 });
   }
 
+  return {
     generatedAt: new Date().toISOString(),
     capturedSince: analyticsStartedAt,
     retention: process.env.ANALYTICS_STORE_PATH ? "Persistent event archive" : "Local archive; persistent disk required for deploy safety",
