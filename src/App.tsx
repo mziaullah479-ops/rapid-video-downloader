@@ -19,7 +19,9 @@ import { DownloadingScreen } from './components/downloadingscreen';
 import { DownloadsHistoryScreen } from './components/DownloadsHistoryScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { CyberBackground } from './components/CyberBackground';
-import { AdminScreen } from './components/adminscreen';
+const AdminScreen = React.lazy(() =>
+  import('./components/adminscreen').then(({ AdminScreen }) => ({ default: AdminScreen })),
+);
 import { initAnalytics, trackEvent } from './utils/analytics';
 import { Smartphone, Monitor } from 'lucide-react';
 
@@ -166,9 +168,13 @@ export default function App() {
 
   const showBackButton = currentView !== 'home';
 
-  if (window.location.pathname === '/admin') return <AdminScreen />;
-
-  if (window.location.pathname === '/admin') return <AdminScreen />;
+  if (window.location.pathname === '/admin') {
+    return (
+      <React.Suspense fallback={<div className="min-h-screen bg-[#030d12] p-6 font-mono-cyber text-[#7feadc]">Loading admin console...</div>}>
+        <AdminScreen />
+      </React.Suspense>
+    );
+  }
 
   return (
     <div className={`min-h-screen bg-[#030d12] text-[#e0f7f6] flex flex-col items-center relative overflow-x-hidden ${isUrdu ? 'rtl' : 'ltr'}`}>
