@@ -70,6 +70,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   return (
     <div className="w-full space-y-5 animate-in fade-in duration-300 pb-4 font-mono-cyber">
       <div className="space-y-1 px-1">
+        <h1 className="text-lg md:text-xl font-display font-bold text-white leading-tight">
+          {isUrdu ? 'عوامی میڈیا کے لیے مفت ویڈیو ڈاؤنلوڈر' : 'Free video downloader for public media'}
+        </h1>
         <p className="text-sm md:text-base font-display font-medium text-[#7feadc] leading-snug">
           {isUrdu
             ? 'ایک یو آر ایل۔ تمام پلیٹ فارمز۔ ایک ڈاؤنلوڈ انجن۔'
@@ -132,6 +135,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <input
             ref={inputRef}
             type="text"
+            aria-label={isUrdu ? 'ویڈیو کا لنک' : 'Video URL'}
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             onKeyDown={(event) => {
@@ -187,7 +191,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {isUrdu ? 'سپورٹ شدہ پلیٹ فارمز' : 'Supported Platforms'}
         </h2>
         <div className="grid grid-cols-3 gap-y-2 gap-x-2 text-xs text-[#c3f2ed]">
-          {['YouTube', 'TikTok', 'Instagram', 'Facebook', 'X (Twitter)', 'Reddit', 'Vimeo', 'Dailymotion', '+ More'].map((item) => (
+          {['TikTok', 'Instagram', 'Facebook', 'X (Twitter)', 'Reddit', 'Pinterest', 'Dailymotion', '+ More'].map((item) => (
             <div key={item} className="flex items-center gap-1.5">
               <span className="w-3.5 h-3.5 rounded-full bg-[#00ffd5]/20 border border-[#00ffd5] flex items-center justify-center shrink-0">
                 <Check size={9} className="text-[#00ffd5] stroke-[3]" />
@@ -202,6 +206,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <Play size={12} />
         <span>{isUrdu ? 'لنک پیسٹ کریں، پھر اصل metadata اور دستیاب qualities دیکھیں۔' : 'Paste a link to inspect real metadata and available qualities.'}</span>
       </div>
+
+      <nav aria-label="Legal information" className="flex flex-wrap justify-center gap-x-3 gap-y-1 px-1 pt-1 text-[10px] text-[#7feadc]/70">
+        <a href="/about/" className="hover:text-[#00ffd5]">About</a>
+        <a href="/privacy-policy/" className="hover:text-[#00ffd5]">Privacy</a>
+        <a href="/terms/" className="hover:text-[#00ffd5]">Terms</a>
+        <a href="/cookie-policy/" className="hover:text-[#00ffd5]">Cookies</a>
+        <a href="/contact/" className="hover:text-[#00ffd5]">Contact / Takedown</a>
+      </nav>
     </div>
   );
 };
