@@ -252,8 +252,6 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
                   <p className="text-[11px] text-[#91dbd0] leading-snug">
                      {platform.id === 'tiktok' 
                        ? (isUrdu ? 'صرف عوامی یا مجاز ویڈیو اسٹریمز دستیاب ہوں تو محفوظ کریں۔' : 'Save public or authorized streams when the platform exposes them.')
-                      : platform.id === 'youtube'
-                       ? (isUrdu ? 'یوٹیوب ویڈیوز اور شارٹس کے لیے دستیاب public formats۔' : 'Public YouTube videos and Shorts when formats are available.')
                       : platform.id === 'instagram'
                       ? (isUrdu ? 'جب سورس فارمیٹ فراہم کرے تو عوامی ریلز اور پوسٹس۔' : 'Public Instagram media when source formats are available.')
                       : platform.id === 'facebook'
