@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const CONTAINER_ID = 'adsterra-native-banner-efa56c9a59a1939d8d2e834b825f42a3';
+const CONTAINER_ID = 'container-efa56c9a59a1939d8d2e834b825f42a3';
 const SCRIPT_SRC = 'https://lightlyenergeticevolution.com/efa56c9a59a1939d8d2e834b825f42a3/invoke.js';
 
 export function AdsterraNativeBanner() {
@@ -22,4 +22,3 @@ export function AdsterraNativeBanner() {
     </div>
   );
 }
-
