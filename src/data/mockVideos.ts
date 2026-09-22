@@ -2,15 +2,6 @@ import { VideoMetadata, PlatformInfo, PlatformId } from '../types';
 
 export const SUPPORTED_PLATFORMS: PlatformInfo[] = [
   {
-    id: 'youtube',
-    name: 'YouTube',
-    badge: 'YT',
-    iconColor: '#ff0033',
-    urlPlaceholder: 'https://www.youtube.com/watch?v=...',
-    sampleUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    domainKeywords: ['youtube.com', 'youtu.be']
-  },
-  {
     id: 'tiktok',
     name: 'TikTok',
     badge: 'TT',
@@ -65,15 +56,6 @@ export const SUPPORTED_PLATFORMS: PlatformInfo[] = [
     domainKeywords: ['pinterest.com', 'pin.it']
   },
   {
-    id: 'vimeo',
-    name: 'Vimeo',
-    badge: 'VM',
-    iconColor: '#1ab7ea',
-    urlPlaceholder: 'https://vimeo.com/...',
-    sampleUrl: 'https://vimeo.com/89201928',
-    domainKeywords: ['vimeo.com']
-  },
-  {
     id: 'dailymotion',
     name: 'Dailymotion',
     badge: 'DM',
@@ -118,8 +100,8 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
         format: 'MP4',
         resolution: '1080p',
         sizeMB: 312.4,
-        noWatermark: true,
-        qualityTag: 'Original Stream (No Watermark)',
+        noWatermark: false,
+        qualityTag: 'Source-provided stream',
         bitrate: '8,500 kbps',
         fps: 60,
         sampleMediaUrl: SAMPLE_STREAM_1
@@ -131,7 +113,7 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
         format: 'MP4',
         resolution: '720p',
         sizeMB: 178.6,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Standard HD',
         bitrate: '4,200 kbps',
         fps: 60,
@@ -144,7 +126,7 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
         format: 'MP4',
         resolution: '480p',
         sizeMB: 96.3,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Medium Quality',
         bitrate: '2,100 kbps',
         fps: 30,
@@ -157,7 +139,7 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
         format: 'MP4',
         resolution: '360p',
         sizeMB: 62.7,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Compact Size',
         bitrate: '1,200 kbps',
         fps: 30,
@@ -169,7 +151,7 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
         badge: 'MP3',
         format: 'MP3',
         sizeMB: 14.8,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: '320 kbps Studio Master',
         bitrate: '320 kbps',
         sampleMediaUrl: SAMPLE_STREAM_1
@@ -177,13 +159,13 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
     ]
   },
 
-  // 2. TikTok Watermark-Free Video
+  // 2. TikTok public video
   tiktok_viral: {
     id: 'vid-tiktok-dance',
     url: 'https://www.tiktok.com/@khaby.lame/video/728910482910382',
     platform: 'tiktok',
     platformName: 'TikTok',
-    title: 'Life Hack Explained Simply | No Watermark HD',
+    title: 'Life Hack Explained Simply | Public HD when available',
     author: 'Khaby Lame',
     authorAvatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=120&auto=format&fit=crop&q=80',
     authorVerified: true,
@@ -193,32 +175,32 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
     uploadedDate: 'Aug 14, 2024',
     duration: 34,
     durationFormatted: '0:34',
-    description: 'Learn the easiest way to solve everyday problems without complicated gadgets. Direct clean stream with TikTok logo stripped.',
-    tags: ['learnontiktok', 'lifehacks', 'comedy', 'humor', 'viral', 'nowatermark'],
+    description: 'Public source metadata preview. Availability and formats depend on the stream exposed by TikTok.',
+    tags: ['learnontiktok', 'lifehacks', 'comedy', 'humor', 'viral', 'public media'],
     thumbnail: 'https://images.unsplash.com/photo-1516251193007-45ef944ab0c6?w=800&auto=format&fit=crop&q=80',
     previewVideoUrl: SAMPLE_STREAM_2,
     options: [
       {
         id: 'tt-1080p',
-        label: '1080p HD (Watermark Removed)',
+        label: '1080p HD (when available)',
         badge: 'HD',
         format: 'MP4',
         resolution: '1080x1920',
         sizeMB: 48.2,
-        noWatermark: true,
-        qualityTag: 'Pure CDN Stream (Clean)',
+        noWatermark: false,
+         qualityTag: 'Source-provided stream',
         bitrate: '6,200 kbps',
         fps: 60,
         sampleMediaUrl: SAMPLE_STREAM_2
       },
       {
         id: 'tt-720p',
-        label: '720p HD (Clean Stream)',
+        label: '720p HD (when available)',
         badge: 'HD',
         format: 'MP4',
         resolution: '720x1280',
         sizeMB: 28.5,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Optimized Mobile',
         bitrate: '3,100 kbps',
         fps: 30,
@@ -230,7 +212,7 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
         badge: 'MP3',
         format: 'MP3',
         sizeMB: 2.1,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Original Sound 320kbps',
         bitrate: '320 kbps',
         sampleMediaUrl: SAMPLE_STREAM_2
@@ -261,12 +243,12 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
     options: [
       {
         id: 'ig-4k',
-        label: '4K Ultra HD (Clean)',
+         label: '4K Ultra HD (when available)',
         badge: '4K',
         format: 'MP4',
         resolution: '2160p',
         sizeMB: 112.5,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Maximum Bitrate',
         bitrate: '15,000 kbps',
         fps: 60,
@@ -279,7 +261,7 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
         format: 'MP4',
         resolution: '1080p',
         sizeMB: 64.2,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Recommended',
         bitrate: '7,000 kbps',
         fps: 60,
@@ -291,7 +273,7 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
         badge: 'MP3',
         format: 'MP3',
         sizeMB: 3.4,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Extracted Soundtrack',
         bitrate: '320 kbps',
         sampleMediaUrl: SAMPLE_STREAM_3
@@ -322,12 +304,12 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
     options: [
       {
         id: 'x-1080p',
-        label: '1080p HD (Clean Stream)',
+        label: '1080p HD (when available)',
         badge: 'HD',
         format: 'MP4',
         resolution: '1080p',
         sizeMB: 84.6,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Highest Twitter Quality',
         bitrate: '6,800 kbps',
         fps: 60,
@@ -340,7 +322,7 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
         format: 'MP4',
         resolution: '720p',
         sizeMB: 42.1,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Fast Download',
         bitrate: '3,200 kbps',
         fps: 30,
@@ -372,12 +354,12 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
     options: [
       {
         id: 'fb-1080p',
-        label: '1080p HD (Watermark-Free)',
+        label: '1080p HD (when available)',
         badge: 'HD',
         format: 'MP4',
         resolution: '1080p',
         sizeMB: 145.2,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Original Bitrate',
         bitrate: '7,500 kbps',
         fps: 60,
@@ -390,7 +372,7 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
         format: 'MP4',
         resolution: '720p',
         sizeMB: 82.7,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'Standard HD',
         bitrate: '3,800 kbps',
         fps: 30,
@@ -402,7 +384,7 @@ export const SAMPLE_VIDEOS: Record<string, VideoMetadata> = {
         badge: 'MP3',
         format: 'MP3',
         sizeMB: 7.2,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: '320 kbps MP3',
         bitrate: '320 kbps',
         sampleMediaUrl: SAMPLE_STREAM_2
@@ -443,7 +425,7 @@ export function resolveVideoForUrl(inputUrl: string): VideoMetadata {
         uploadedDate: 'Oct 25, 2009',
         duration: 213,
         durationFormatted: '03:33',
-        description: 'The official video for Never Gonna Give You Up by Rick Astley. Extracted clean stream with original audio tracks.',
+        description: 'The official video metadata returned by the public source.',
         tags: ['rick astley', 'never gonna give you up', 'music', 'official', '80s'],
         thumbnail: thumb,
         previewVideoUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1`,
@@ -464,12 +446,12 @@ export function resolveVideoForUrl(inputUrl: string): VideoMetadata {
       authorVerified: true,
       subscribersOrFollowers: 'Official Channel',
       views: 'High Definition',
-      likes: 'Clean Stream',
+      likes: 'Public data unavailable',
       uploadedDate: 'Original Video',
       duration: 320,
       durationFormatted: '05:20',
-      description: `Original YouTube Video Feed [ID: ${videoId}]. Direct watermark-free media stream extracted with multi-resolution download options.`,
-      tags: ['youtube', 'original-video', 'no-watermark', 'clean-stream', videoId],
+      description: `Public YouTube metadata for video ${videoId}. Available formats depend on the source.`,
+      tags: ['youtube', 'original-video', 'public media', videoId],
       thumbnail: thumb,
       previewVideoUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1`,
       youtubeVideoId: videoId,
@@ -481,8 +463,8 @@ export function resolveVideoForUrl(inputUrl: string): VideoMetadata {
           format: 'MP4',
           resolution: '1080p',
           sizeMB: 78.4,
-          noWatermark: true,
-          qualityTag: 'Original Stream (No Watermark)',
+          noWatermark: false,
+          qualityTag: 'Source-provided stream',
           bitrate: '8,000 kbps',
           fps: 60,
           sampleMediaUrl: SAMPLE_STREAM_1
@@ -494,7 +476,7 @@ export function resolveVideoForUrl(inputUrl: string): VideoMetadata {
           format: 'MP4',
           resolution: '720p',
           sizeMB: 44.8,
-          noWatermark: true,
+          noWatermark: false,
           qualityTag: 'Standard HD',
           bitrate: '4,500 kbps',
           fps: 60,
@@ -507,7 +489,7 @@ export function resolveVideoForUrl(inputUrl: string): VideoMetadata {
           format: 'MP4',
           resolution: '480p',
           sizeMB: 24.6,
-          noWatermark: true,
+          noWatermark: false,
           qualityTag: 'Medium Quality',
           bitrate: '2,200 kbps',
           fps: 30,
@@ -519,7 +501,7 @@ export function resolveVideoForUrl(inputUrl: string): VideoMetadata {
           badge: 'MP3',
           format: 'MP3',
           sizeMB: 6.8,
-          noWatermark: true,
+          noWatermark: false,
           qualityTag: '320 kbps Stereo',
           bitrate: '320 kbps',
           sampleMediaUrl: SAMPLE_STREAM_1
@@ -561,7 +543,7 @@ export function resolveVideoForUrl(inputUrl: string): VideoMetadata {
   const formattedTitle = lastPart
     .replace(/[?#].*$/, '')
     .replace(/[-_]/g, ' ')
-    .substring(0, 50) || 'Decrypted Media Stream';
+     .substring(0, 50) || 'Media Stream';
 
   return {
     id: `vid-${Date.now()}`,
@@ -578,8 +560,8 @@ export function resolveVideoForUrl(inputUrl: string): VideoMetadata {
     uploadedDate: 'Recently',
     duration: 120,
     durationFormatted: '2:00',
-    description: `Direct video feed successfully captured and decrypted from ${inputUrl}. Watermark filtering and bypass protocols active.`,
-    tags: ['download', 'media', 'watermarkfree', detectedPlatform, 'stream'],
+    description: `Public media metadata for ${inputUrl}. Download availability depends on the source.`,
+    tags: ['download', 'media', 'public source', detectedPlatform, 'stream'],
     thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
     previewVideoUrl: SAMPLE_STREAM_1,
     options: [
@@ -590,8 +572,8 @@ export function resolveVideoForUrl(inputUrl: string): VideoMetadata {
         format: 'MP4',
         resolution: '1080p',
         sizeMB: 154.2,
-        noWatermark: true,
-        qualityTag: 'Clean Stream (No Watermark)',
+        noWatermark: false,
+        qualityTag: 'Source-provided stream',
         bitrate: '8,000 kbps',
         fps: 60,
         sampleMediaUrl: SAMPLE_STREAM_1
@@ -603,7 +585,7 @@ export function resolveVideoForUrl(inputUrl: string): VideoMetadata {
         format: 'MP4',
         resolution: '720p',
         sizeMB: 88.5,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: 'High Definition',
         bitrate: '4,000 kbps',
         fps: 30,
@@ -615,7 +597,7 @@ export function resolveVideoForUrl(inputUrl: string): VideoMetadata {
         badge: 'MP3',
         format: 'MP3',
         sizeMB: 8.5,
-        noWatermark: true,
+        noWatermark: false,
         qualityTag: '320 kbps Stereo',
         bitrate: '320 kbps',
         sampleMediaUrl: SAMPLE_STREAM_1
