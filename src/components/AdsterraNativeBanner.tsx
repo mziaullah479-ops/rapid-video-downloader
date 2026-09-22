@@ -17,7 +17,7 @@ export function AdsterraNativeBanner() {
   }, []);
 
   return (
-    <div className="w-full min-h-[64px] flex items-center justify-center overflow-hidden rounded-xl border border-[#00ffd5]/10 bg-[#031117]/60">
+    <div className="w-full mt-5 flex items-center justify-center overflow-hidden">
       <div id={CONTAINER_ID} className="w-full" />
     </div>
   );
