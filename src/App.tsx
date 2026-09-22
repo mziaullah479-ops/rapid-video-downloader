@@ -24,6 +24,7 @@ const AdminScreen = React.lazy(() =>
 );
 import { initAnalytics, trackEvent } from './utils/analytics';
 import { Smartphone, Monitor } from 'lucide-react';
+import { AdsterraNativeBanner } from './components/AdsterraNativeBanner';
 
 const INITIAL_HISTORY: DownloadHistoryItem[] = [];
 
@@ -226,6 +227,8 @@ export default function App() {
 
           {/* Active Screen View */}
           <div className="flex-1 p-4 pb-20 overflow-y-auto">
+            <AdsterraNativeBanner />
+
             {currentView === 'home' && (
               <HomeScreen
                 url={url}
