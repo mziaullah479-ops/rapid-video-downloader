@@ -39,6 +39,10 @@ type Metrics = {
   capturedSince: string;
   retention: string;
   storagePath: string;
+  archiveStatus: 'ephemeral' | 'persistent' | 'error';
+  archiveConfigured: boolean;
+  lastStoredAt?: string;
+  archiveError?: string;
   eventCount: number;
   pageViews: number;
   activeUsers: number;
@@ -314,8 +318,10 @@ export const AdminScreen: React.FC = () => {
               <p><span className="text-[#00ffd5]">Last refresh:</span> {new Date(metrics.generatedAt).toLocaleTimeString()}</p>
               <p><span className="text-[#00ffd5]">Stored events:</span> {metrics.eventCount.toLocaleString()}</p>
               <p><span className="text-[#00ffd5]">Archive mode:</span> {metrics.retention}</p>
+              <p><span className="text-[#00ffd5]">Write status:</span> <span className={metrics.archiveStatus === 'error' ? 'text-red-300' : 'text-[#00e599]'}>{metrics.archiveStatus.toUpperCase()}</span></p>
               <p><span className="text-[#00ffd5]">Path:</span> {metrics.storagePath}</p>
-              <p className="rounded-xl border border-[#00ffd5]/20 bg-[#00ffd5]/5 p-3 text-[#b8fff6]">Events are appended to the archive and are not trimmed by the app. A persistent disk or database is required to keep the archive across deploys.</p>
+              <p><span className="text-[#00ffd5]">Last stored:</span> {metrics.lastStoredAt ? new Date(metrics.lastStoredAt).toLocaleTimeString() : 'Waiting for first write'}</p>
+              <p className="rounded-xl border border-[#00ffd5]/20 bg-[#00ffd5]/5 p-3 text-[#b8fff6]">{metrics.archiveConfigured ? 'Archive is configured for a persistent path.' : 'Archive is running on local service storage. Add a Render persistent disk and set ANALYTICS_STORE_PATH to keep events after restarts.'}{metrics.archiveError ? ' Last write error: ' + metrics.archiveError : ''}</p>
             </div>
           </div>
         </section>
