@@ -12,7 +12,7 @@ Rapid Video Downloader is a browser-based tool at https://www.rapid-video-downlo
 
 ## Supported public sources
 
-YouTube, TikTok, Instagram, Facebook, X, Reddit, Pinterest, Vimeo, Dailymotion and direct media URLs may be supported when they expose public media.
+TikTok, Instagram, Facebook, X, Reddit, Pinterest, Dailymotion and direct media URLs may be supported when they expose public media.
 
 ## Limits
 
