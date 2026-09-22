@@ -82,7 +82,7 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
           <span>{isUrdu ? 'مکمل گائیڈ اور پلیٹ فارمز' : 'PLATFORMS & USER GUIDE'}</span>
         </div>
         <h2 className="text-lg md:text-xl font-display font-bold text-white leading-tight">
-          {isUrdu ? 'ویڈیوز ڈاؤنلوڈ کرنے کا آسان طریقہ کار' : 'Master Any Video Stream in Seconds'}
+          {isUrdu ? 'عوامی میڈیا محفوظ کرنے کا طریقہ کار' : 'Save Available Public Media'}
         </h2>
           <p className="text-xs text-[#a3e5dc] mt-1 leading-relaxed">
             {isUrdu 
@@ -159,7 +159,7 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
                 title: isUrdu ? 'لنک کاپی کریں (Copy URL)' : 'Copy Video Link',
                 desc: isUrdu 
                   ? 'ٹک ٹاک، یوٹیوب یا فیس بک ایپ پر "Share" دبائیں اور "Copy Link" منتخب کریں۔'
-                  : 'Open TikTok, YouTube, Instagram or Facebook, click Share and tap "Copy Link".',
+                  : 'Open TikTok, Instagram or Facebook, click Share and tap "Copy Link".',
                 icon: ExternalLink
               },
               {
@@ -255,10 +255,10 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
                       : platform.id === 'youtube'
                        ? (isUrdu ? 'یوٹیوب ویڈیوز اور شارٹس کے لیے دستیاب public formats۔' : 'Public YouTube videos and Shorts when formats are available.')
                       : platform.id === 'instagram'
-                      ? (isUrdu ? 'انسٹاگرام ریلز، پوسٹس اور کہانیاں اصل ریزولوشن میں۔' : 'Instagram Reels & carousel videos in clean MP4.')
+                      ? (isUrdu ? 'جب سورس فارمیٹ فراہم کرے تو عوامی ریلز اور پوسٹس۔' : 'Public Instagram media when source formats are available.')
                       : platform.id === 'facebook'
-                      ? (isUrdu ? 'فیس بک واچ اور ریلز اصل کوالٹی میں۔' : 'Facebook Watch & Reels in high definition.')
-                      : (isUrdu ? 'اصل کوالٹی میں تیز رفتار ڈاؤنلوڈ۔' : 'Ultra-fast direct media packet extraction.')}
+                      ? (isUrdu ? 'جب سورس فارمیٹ فراہم کرے تو عوامی ویڈیوز۔' : 'Public Facebook media when source formats are available.')
+                      : (isUrdu ? 'فارمیٹ اور دستیابی سورس پر منحصر ہے۔' : 'Formats and availability depend on the source.')}
                   </p>
                 </div>
               </div>
@@ -269,7 +269,7 @@ export const GuideScreen: React.FC<GuideScreenProps> = ({ isUrdu = false, onGoTo
           <div className="p-3.5 rounded-xl bg-[#04151b] border border-[#00ffd5]/20 space-y-2">
             <h4 className="text-xs font-mono-cyber font-bold text-[#00ffd5] flex items-center gap-1.5">
               <Video size={14} />
-               <span>{isUrdu ? 'ممکنہ فارمیٹس اور ریزولوشن' : 'Common Formats & Resolutions'}</span>
+              <span>{isUrdu ? 'ممکنہ فارمیٹس اور ریزولوشن' : 'Possible Formats & Resolutions'}</span>
             </h4>
             <div className="flex flex-wrap gap-1.5 text-xs">
               {['MP4 (1080p 60fps)', 'MP4 (720p HD)', 'MP4 (480p SD)', 'MP3 (320 kbps Audio)', 'M4A Stereo', 'WEBM'].map((fmt, i) => (
