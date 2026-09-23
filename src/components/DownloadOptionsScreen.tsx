@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { VideoMetadata, DownloadOption } from '../types';
 import { cyberAudio } from '../utils/audio';
+import { AdsterraNativeBanner } from './AdsterraNativeBanner';
 
 interface DownloadOptionsScreenProps {
   metadata: VideoMetadata;
@@ -201,6 +202,8 @@ export const DownloadOptionsScreen: React.FC<DownloadOptionsScreenProps> = ({
           </button>
         </div>
       </div>
+
+      <AdsterraNativeBanner />
 
       {/* Big Neon Download Now button matching screenshot */}
       <div className="pt-2">
