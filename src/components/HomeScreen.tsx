@@ -202,23 +202,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </div>
 
-      <nav aria-label="Helpful video downloader guides" className="rounded-xl border border-[#00ffd5]/15 bg-[#031217] p-3.5 space-y-2">
-        <h2 className="text-xs uppercase tracking-wider text-[#00ffd5]/80 font-semibold">Helpful video downloader guides</h2>
-        <p className="text-[11px] leading-5 text-[#b8e8e2]/70">Learn how to download public media, choose MP4 or MP3, and use each supported platform safely.</p>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-          <a href="/video-downloader/" className="text-[#9ffbef] hover:text-white">Video downloader guide</a>
-          <a href="/video-to-mp3/" className="text-[#9ffbef] hover:text-white">Video to MP3</a>
-          <a href="/tiktok-video-downloader/" className="text-[#9ffbef] hover:text-white">TikTok downloader</a>
-          <a href="/instagram-video-downloader/" className="text-[#9ffbef] hover:text-white">Instagram downloader</a>
-          <a href="/facebook-video-downloader/" className="text-[#9ffbef] hover:text-white">Facebook downloader</a>
-          <a href="/faq/" className="text-[#9ffbef] hover:text-white">Downloader FAQ</a>
-        </div>
-      </nav>
-
       <div className="flex items-center gap-2 px-1 text-[11px] text-[#00ffd5]/55">
         <Play size={12} />
         <span>{isUrdu ? 'لنک پیسٹ کریں، پھر اصل metadata اور دستیاب qualities دیکھیں۔' : 'Paste a link to inspect real metadata and available qualities.'}</span>
       </div>
+
+      <nav aria-label="SEO guides" className="flex flex-wrap justify-center gap-x-3 gap-y-1 px-1 pt-1 text-[10px] text-[#7feadc]/70">
+        <a href="/tiktok-video-downloader/" className="hover:text-[#00ffd5]">TikTok Video Downloader</a>
+        <a href="/video-downloader/" className="hover:text-[#00ffd5]">All Platform Guide</a>
+        <a href="/video-to-mp3/" className="hover:text-[#00ffd5]">Video to MP3</a>
+      </nav>
 
       <nav aria-label="Legal information" className="flex flex-wrap justify-center gap-x-3 gap-y-1 px-1 pt-1 text-[10px] text-[#7feadc]/70">
         <a href="/about/" className="hover:text-[#00ffd5]">About</a>
