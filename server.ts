@@ -363,6 +363,7 @@ function isExtractorUrl(url: URL): boolean {
 
 function platformForUrl(url: URL): { id: string; name: string } {
   const hostname = url.hostname.toLowerCase();
+  if (hostname.includes("moviebox")) return { id: "other", name: "MovieBox" };
   if (hostname.includes("youtube") || hostname === "youtu.be") return { id: "youtube", name: "YouTube" };
   if (hostname.includes("tiktok")) return { id: "tiktok", name: "TikTok" };
   if (hostname.includes("instagram") || hostname.includes("instagr.am")) return { id: "instagram", name: "Instagram" };
@@ -1073,7 +1074,9 @@ async function startServer() {
       }
 
       return res.status(422).json({
-        error: "This is not a supported platform link or a direct media URL.",
+        error: parsed.hostname.toLowerCase().includes("moviebox")
+          ? "MovieBox page URLs are not supported for downloading. Premium, login-required and DRM-protected media cannot be bypassed. Use the platform's official download option or a direct public media URL you are authorized to save."
+          : "This is not a supported platform link or a direct media URL.",
         downloadSupported: false,
       });
     } catch (error) {
