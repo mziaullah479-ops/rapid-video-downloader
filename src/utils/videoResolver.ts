@@ -34,6 +34,9 @@ export function detectPlatform(url: string): { id: PlatformId; name: string } {
   if (lower.includes('youtube.com') || lower.includes('youtu.be')) {
     return { id: 'youtube', name: 'YouTube' };
   }
+  if (lower.includes('moviebox')) {
+    return { id: 'other', name: 'MovieBox' };
+  }
   if (lower.includes('tiktok.com')) {
     return { id: 'tiktok', name: 'TikTok' };
   }
@@ -181,10 +184,16 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
 
   // Attempt backend resolve-video endpoint first for all platforms (YouTube, TikTok, Twitter, Vimeo, etc.)
   let serverData: any = null;
+  let serverError = '';
   try {
     const serverRes = await fetch(`/api/resolve-video?url=${encodeURIComponent(cleanUrl)}`);
     if (serverRes.ok) {
       serverData = await serverRes.json();
+    } else {
+      const errorData = await serverRes.json().catch(() => null);
+      serverError = typeof errorData?.error === 'string'
+        ? errorData.error
+        : `The source returned HTTP ${serverRes.status}.`;
     }
   } catch {
     // Continue to client-side heuristics
@@ -466,7 +475,11 @@ export async function resolveVideoMetadataAsync(inputUrl: string): Promise<Video
     thumbnail: serverData?.thumbnail || DEFAULT_THUMBNAIL,
     previewVideoUrl: serverData?.previewVideoUrl || '',
     downloadSupported: serverData?.downloadSupported === true,
-    downloadMessage: serverData?.downloadMessage,
-    options: generateDownloadOptions('univ-' + Date.now(), Number(serverData?.duration || 0), cleanUrl)
+    downloadMessage: serverData?.downloadMessage || serverError || undefined,
+    options: serverData?.directMedia === true
+      ? directMediaOptions(serverData?.directMediaFormat, cleanUrl, Number(serverData?.directSizeMB || 0))
+      : serverError
+        ? []
+        : generateDownloadOptions('univ-' + Date.now(), Number(serverData?.duration || 0), cleanUrl)
   };
 }
