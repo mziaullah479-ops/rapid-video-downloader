@@ -20,7 +20,7 @@ export function AdsterraNativeBanner() {
     script.addEventListener('error', collapseIfEmpty, { once: true });
     container.dataset.loaded = 'true';
     // Adsterra's native snippet expects the target container before its script.
-    container.after(script);
+    container.before(script);
     const timeoutId = window.setTimeout(collapseIfEmpty, 12000);
 
     return () => {
