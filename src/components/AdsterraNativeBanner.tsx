@@ -8,13 +8,25 @@ export function AdsterraNativeBanner() {
     const container = document.getElementById(CONTAINER_ID);
     if (!container || container.dataset.loaded === 'true') return;
 
+    const collapseIfEmpty = () => {
+      if (!container.children.length && !container.textContent?.trim()) {
+        container.style.minHeight = '0';
+      }
+    };
     const script = document.createElement('script');
     script.async = true;
     script.dataset.cfasync = 'false';
     script.src = SCRIPT_SRC;
+    script.addEventListener('error', collapseIfEmpty, { once: true });
     container.dataset.loaded = 'true';
     // Adsterra's native snippet expects the target container before its script.
     container.after(script);
+    const timeoutId = window.setTimeout(collapseIfEmpty, 12000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      script.removeEventListener('error', collapseIfEmpty);
+    };
   }, []);
 
   return (
