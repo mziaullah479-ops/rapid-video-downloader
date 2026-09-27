@@ -13,12 +13,13 @@ export function AdsterraNativeBanner() {
     script.dataset.cfasync = 'false';
     script.src = SCRIPT_SRC;
     container.dataset.loaded = 'true';
-    container.before(script);
+    // Adsterra's native snippet expects the target container before its script.
+    container.after(script);
   }, []);
 
   return (
     <div className="w-full mt-5 flex items-center justify-center overflow-hidden">
-      <div id={CONTAINER_ID} className="w-full" />
+      <div id={CONTAINER_ID} className="w-full min-h-[90px]" />
     </div>
   );
 }
